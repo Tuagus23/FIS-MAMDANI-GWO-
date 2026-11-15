@@ -53,21 +53,21 @@ def show_summary(summary: pd.DataFrame, download_key: str) -> None:
         columns={"fnd": "FND", "hnd": "HND", "lnd": "LND"}
     )
     st.subheader("Umur jaringan")
-    st.bar_chart(lifetime, height=280, color=["#d99a38", "#507b91", "#167c72"])
+    st.caption("🟠 FND: node pertama mati · 🔵 HND: separuh node mati · 🟢 LND: node terakhir mati.")
+    st.bar_chart(lifetime, height=280, color=["#d99a38", "#507b91", "#167c72"], stack=False)
 
-    columns = ["protocol", "last_round", "fnd", "r10", "hnd", "r90", "lnd", "pdr_total_pct"]
+    columns = ["protocol", "fnd", "hnd", "lnd", "pdr_total_pct"]
     labels = {
         "protocol": "Protokol",
-        "last_round": "Round terakhir",
         "fnd": "FND",
-        "r10": "R10",
         "hnd": "HND",
-        "r90": "R90",
         "lnd": "LND",
         "pdr_total_pct": "PDR (%)",
     }
     table = summary[[column for column in columns if column in summary.columns]].rename(columns=labels)
-    st.dataframe(table, hide_index=True, use_container_width=True)
+    if "PDR (%)" in table.columns:
+        table["PDR (%)"] = table["PDR (%)"].round(2)
+    st.dataframe(table, hide_index=True, width="stretch")
     st.download_button(
         "Unduh ringkasan CSV",
         summary.to_csv(index=False).encode("utf-8"),
@@ -88,8 +88,8 @@ def show_validation(path: Path) -> None:
     milestones = validation[validation["metric"].isin(["FND", "HND", "LND"])]
     if not milestones.empty:
         chart = milestones.set_index("metric")[["FUZZY_mean", "GWO_mean"]]
-        st.bar_chart(chart, height=260, color=["#d99a38", "#167c72"])
-    st.dataframe(validation, hide_index=True, use_container_width=True)
+        st.bar_chart(chart, height=260, color=["#d99a38", "#167c72"], stack=False)
+    st.dataframe(validation, hide_index=True, width="stretch")
     st.download_button(
         "Unduh ringkasan validasi CSV",
         validation.to_csv(index=False).encode("utf-8"),
@@ -144,7 +144,7 @@ def show_membership_functions(path: Path) -> None:
         axis.grid(axis="y", alpha=0.2)
         axis.spines[["top", "right"]].set_visible(False)
         axis.legend(frameon=False, fontsize=8, ncol=3)
-    st.pyplot(figure, use_container_width=True)
+    st.pyplot(figure, width="stretch")
     plt.close(figure)
     st.download_button(
         "Unduh parameter MF JSON",
