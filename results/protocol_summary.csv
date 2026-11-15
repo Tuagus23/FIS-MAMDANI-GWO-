@@ -1,0 +1,5 @@
+protocol,last_round,fnd,r10,hnd,r90,lnd,alive_nodes_last,residual_energy_last_j,total_packets_generated,total_readings_delivered,pdr_total_pct
+FUZZY,1317,357,419,767,1065,1317,0,0.0,23263,23115,99.36379658685466
+LEACH,1126,422,461,772,1115,1126,0,0.0,23412,23318,99.59849649752263
+GWO,1520,376,412,675,1033,1520,0,0.0,22555,22387,99.25515406783418
+

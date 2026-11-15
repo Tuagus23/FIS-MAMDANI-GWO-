@@ -1,0 +1,7 @@
+metric,FUZZY_mean,GWO_mean,mean_delta_GWO_minus_FUZZY,GWO_wins,FUZZY_wins,ties,seed_count
+FND,430.3,426.7,-3.6,5,4,1,10
+HND,830.6,800.3,-30.3,2,8,0,10
+LND,1431.8,1537.3,105.5,8,1,1,10
+PDR_pct,99.365,99.301,-0.064,2,8,0,10
+lifetime_index,0.56098,0.5759,0.01492,8,2,0,10
+
