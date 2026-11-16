@@ -2,7 +2,7 @@ services:
   - type: web
     name: fuzzy-ch-wsn
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
     healthCheckPath: /api/health
-
