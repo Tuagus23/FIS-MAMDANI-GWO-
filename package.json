@@ -1,0 +1,11 @@
+{
+  "name": "fuzzy-ch-wsn-web",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./web/tailwind.input.css -o ./web/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}
+

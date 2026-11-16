@@ -24,15 +24,32 @@ digunakan adalah NumPy dan Matplotlib.
 
 ## Dashboard web
 
-Jalankan antarmuka web secara lokal dengan:
+Antarmuka web memakai HTML, CSS, JavaScript, dan Tailwind CSS. Perhitungan simulasi
+tetap memakai mesin Python yang sama dengan CLI. Jalankan server lokal dengan:
 
     py -m pip install -r requirements.txt
-    streamlit run app.py
+    py app.py
 
-Dashboard ini menampilkan ringkasan eksperimen tersimpan, validasi topologi,
-kurva fungsi keanggotaan hasil GWO, dan perbandingan FUZZY, LEACH, serta GWO
-untuk seed dan horizon simulasi yang dapat dipilih. Run dari dashboard memakai
-MF GWO hasil kalibrasi 10 seed yang sudah disertakan.
+Buka **http://localhost:8000**. Untuk deployment, jalankan aplikasi sebagai
+Python web service dan gunakan perintah mulai `python app.py`. Server membaca
+port dari variabel lingkungan `PORT` yang disediakan penyedia hosting.
+Konfigurasi Render tersedia di `render.yaml`.
+
+Tailwind CSS sudah dikompilasi ke `web/tailwind.css`; Node.js hanya diperlukan
+jika Anda mengubah utility class dan ingin membangunnya ulang:
+
+    npm install
+    npm run build:css
+
+Untuk menyiapkan deployment di Render, hubungkan repo GitHub proyek lalu buat
+Web Service dari repo tersebut. Render akan membaca `render.yaml`, memasang
+dependensi Python, dan menjalankan server pada URL publik.
+
+Dashboard menampilkan ringkasan eksperimen, hasil validasi topologi, kurva
+fungsi keanggotaan, dan simulasi baru untuk membandingkan FUZZY, LEACH, serta
+GWO. Run simulasi memakai MF GWO dari `results/membership_gwo.json`; optimizer
+tidak dijalankan ulang. Parameter simulasi dibatasi hingga 60 node dan 2.000
+ronde agar layanan bersama tetap responsif.
 
 Parameter utama:
 
@@ -138,8 +155,11 @@ juga dibuat. Saat kalibrasi, program menyimpan
 **membership_gwo.json**, **gwo_history.csv**, dan **calibration_report.json**.
 Detail evaluasi tiap wolf pada populasi awal dan setiap pembaruan posisi juga
 disimpan di **gwo_wolf_fitness.csv** (fitness, metrik pembentuk, peringkat,
-peran, dan 13 koordinat MF) serta divisualisasikan di **gwo_wolf_fitness.png**.
-CSV menyertakan **id** evaluasi unik dan **no_iterasi** (0 = populasi awal).
+peran, tanda **is_alpha**, dan 13 koordinat MF) serta divisualisasikan di
+**gwo_wolf_fitness.png**. Bintang pada grafik menandai alpha di tiap iterasi;
+**gwo_alpha_history.csv** dan **gwo_alpha_history.png** menunjukkan wolf yang
+memegang peran alpha pada setiap populasi. CSV menyertakan **id** evaluasi unik
+dan **no_iterasi** (0 = populasi awal).
 Wolf pada generasi akhir diringkas di **gwo_final_wolves.csv**; satu gambar per
 wolf di **gwo_final_wolf_plots/** menampilkan kurva MF input dan milestone
 lifetime hasil evaluasi fitness. Solusi terbaik sepanjang optimasi, yang dipakai
