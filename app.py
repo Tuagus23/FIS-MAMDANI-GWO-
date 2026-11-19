@@ -171,7 +171,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_json({"status": "ok"})
             return
 
-        if request.path == "/api/auth/config":
+        if request.path == "/api/auth-config":
             try:
                 self.send_json(public_auth_config())
             except AuthConfigurationError as error:
