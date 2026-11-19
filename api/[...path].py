@@ -6,6 +6,14 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
+from auth import (
+    AuthConfigurationError,
+    AuthDenied,
+    AuthForbidden,
+    AuthProviderUnavailable,
+    public_auth_config,
+    verify_authorization_header,
+)
 from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
 
 
@@ -17,7 +25,16 @@ class handler(BaseHTTPRequestHandler):
             self.send_json({"status": "ok"})
             return
 
+        if request.path == "/api/auth/config":
+            try:
+                self.send_json(public_auth_config())
+            except AuthConfigurationError as error:
+                self.send_json({"error": str(error)}, status=503)
+            return
+
         if request.path == "/api/datasets":
+            if not self.require_authentication():
+                return
             self.send_json(
                 {
                     "default": "results",
@@ -30,6 +47,8 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if request.path == "/api/dashboard":
+            if not self.require_authentication():
+                return
             dataset_id = parse_qs(request.query).get("dataset", ["results"])[0]
             if dataset_id not in DATASETS:
                 self.send_json({"error": "Dataset tidak dikenal."}, status=404)
@@ -48,6 +67,9 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if urlparse(self.path).path != "/api/simulate":
             self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
+            return
+
+        if not self.require_authentication():
             return
 
         try:
@@ -83,6 +105,23 @@ class handler(BaseHTTPRequestHandler):
             )
         finally:
             SIMULATION_LOCK.release()
+
+    def require_authentication(self) -> bool:
+        try:
+            verify_authorization_header(self.headers.get("Authorization", ""))
+            return True
+        except AuthConfigurationError as error:
+            self.send_json({"error": str(error)}, status=503)
+        except AuthDenied as error:
+            self.send_json({"error": str(error)}, status=401)
+        except AuthForbidden as error:
+            self.send_json({"error": str(error)}, status=403)
+        except AuthProviderUnavailable:
+            self.send_json(
+                {"error": "Layanan login tidak dapat dihubungi. Coba lagi sebentar."},
+                status=503,
+            )
+        return False
 
     def send_json(self, data: dict, status: int = 200) -> None:
         body = json.dumps(data, ensure_ascii=False, allow_nan=False).encode("utf-8")

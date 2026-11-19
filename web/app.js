@@ -1,25 +1,27 @@
-const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, charts: {}, view: "hasil" };
+const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, charts: {}, view: "hasil", authClient: null };
+const inviteType = new URLSearchParams(window.location.hash.slice(1)).get("type")
+  || new URLSearchParams(window.location.search).get("type");
 
 const viewText = {
   hasil: {
-    title: "Ringkasan hasil",
-    description: "Membandingkan umur jaringan dan keberhasilan pengiriman paket pada setiap protokol.",
-    breadcrumb: "RINGKASAN HASIL",
+    title: "Dashboard eksperimen",
+    description: "Bandingkan umur jaringan dan keberhasilan pengiriman tiga protokol.",
+    breadcrumb: "Dashboard",
   },
   validasi: {
     title: "Validasi model",
     description: "Membaca performa model FUZZY dan GWO pada topologi yang tidak digunakan dalam optimasi.",
-    breadcrumb: "VALIDASI MODEL",
+    breadcrumb: "Validasi model",
   },
   membership: {
     title: "Fungsi keanggotaan",
     description: "Melihat cara energi, jarak, dan jumlah tetangga diterjemahkan menjadi skor kandidat cluster head.",
-    breadcrumb: "FUNGSI KEANGGOTAAN",
+    breadcrumb: "Fungsi keanggotaan",
   },
   simulasi: {
     title: "Simulasi baru",
     description: "Ubah parameter jaringan dan lihat perbandingan tiga protokol pada topologi yang sama.",
-    breadcrumb: "SIMULASI BARU",
+    breadcrumb: "Simulasi baru",
   },
 };
 
@@ -31,6 +33,35 @@ const decimalFormat = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2,
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
+
+function redirectToLogin(status = "") {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  window.location.replace(`/login.html${query}`);
+}
+
+async function authenticatedFetch(url, options = {}) {
+  const { data, error } = await state.authClient.auth.getSession();
+  const session = data?.session;
+  if (error || !session) {
+    redirectToLogin("expired");
+    throw new Error("Sesi berakhir. Silakan masuk kembali.");
+  }
+
+  const headers = new Headers(options.headers || {});
+  headers.set("Authorization", `Bearer ${session.access_token}`);
+  const response = await fetch(url, { ...options, headers });
+  if (response.status === 401 || response.status === 403) {
+    await state.authClient.auth.signOut({ scope: "local" }).catch(() => {});
+    redirectToLogin(response.status === 403 ? "access" : "expired");
+  }
+  return response;
+}
+
+function setConnectionStatus(message, connected = true) {
+  const status = $("#connectionState");
+  $("#connectionText").textContent = message;
+  status.classList.toggle("is-error", !connected);
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -63,7 +94,7 @@ function setView(view) {
   const copy = viewText[view];
   $("#pageTitle").textContent = copy.title;
   $("#pageDescription").textContent = copy.description;
-  $("#breadcrumb").innerHTML = `RUANG ANALISIS <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
+  $("#breadcrumb").innerHTML = `Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
   $("#downloadPrimary").classList.toggle("hidden", view !== "hasil");
   if (view === "hasil") setTimeout(() => renderLifetimeChart(state.dashboard?.summary || []), 0);
   if (view === "validasi") setTimeout(() => renderValidationChart(state.dashboard?.validation || []), 0);
@@ -294,7 +325,7 @@ async function loadDashboard(datasetId = state.datasetId) {
   setError("");
   setLoading(true);
   try {
-    const response = await fetch(`/api/dashboard?dataset=${encodeURIComponent(datasetId)}`, { headers: { Accept: "application/json" } });
+    const response = await authenticatedFetch(`/api/dashboard?dataset=${encodeURIComponent(datasetId)}`, { headers: { Accept: "application/json" } });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Data eksperimen tidak dapat dimuat.");
     state.dashboard = data;
@@ -304,6 +335,7 @@ async function loadDashboard(datasetId = state.datasetId) {
     renderValidation(data.validation);
     renderMembershipCharts(data.membership);
   } catch (error) {
+    setConnectionStatus("Data tidak tersedia", false);
     setError(error.message || "Tidak dapat menghubungi server.");
   } finally {
     setLoading(false);
@@ -394,6 +426,11 @@ function downloadMembership() {
 function bindEvents() {
   $$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
   $("#datasetSelect").addEventListener("change", (event) => loadDashboard(event.target.value));
+  $("#logoutButton").addEventListener("click", async () => {
+    $("#logoutButton").disabled = true;
+    await state.authClient.auth.signOut({ scope: "local" });
+    window.location.replace("/login.html");
+  });
   $("#downloadPrimary").addEventListener("click", downloadSummary);
   $("#downloadValidation").addEventListener("click", downloadValidation);
   $("#downloadMembership").addEventListener("click", downloadMembership);
@@ -416,7 +453,7 @@ function bindEvents() {
     if (!event.currentTarget.reportValidity()) return;
     setSimulationBusy(true);
     try {
-      const response = await fetch("/api/simulate", {
+      const response = await authenticatedFetch("/api/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
@@ -442,11 +479,37 @@ function bindEvents() {
 }
 
 async function start() {
-  bindEvents();
   try {
-    const response = await fetch("/api/datasets", { headers: { Accept: "application/json" } });
+    state.authClient = await window.dashboardAuth.getClient();
+  } catch (error) {
+    redirectToLogin("setup");
+    return;
+  }
+
+  const { data: sessionData, error: sessionError } = await state.authClient.auth.getSession();
+  const session = sessionData?.session;
+  if (sessionError || !session) {
+    if (inviteType === "invite") {
+      window.location.replace("/login.html?type=invite");
+      return;
+    }
+    redirectToLogin();
+    return;
+  }
+  if (inviteType === "invite") {
+    window.location.replace("/login.html?type=invite");
+    return;
+  }
+
+  $("#accountEmail").textContent = session.user.email || "Akun aktif";
+  $("#accountEmail").title = session.user.email || "Akun aktif";
+  bindEvents();
+
+  try {
+    const response = await authenticatedFetch("/api/datasets", { headers: { Accept: "application/json" } });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Daftar dataset tidak dapat dimuat.");
+    setConnectionStatus("Terhubung");
     state.datasets = data.datasets;
     state.datasetId = data.default || "results";
     $("#datasetSelect").innerHTML = state.datasets.map((dataset) => `<option value="${escapeHtml(dataset.id)}">${escapeHtml(dataset.label)}</option>`).join("");
@@ -454,6 +517,7 @@ async function start() {
     await loadDashboard(state.datasetId);
   } catch (error) {
     setLoading(false);
+    setConnectionStatus("Gagal memuat", false);
     setError(error.message || "Tidak dapat menghubungi server. Jalankan aplikasi dengan perintah python app.py.");
   }
 }

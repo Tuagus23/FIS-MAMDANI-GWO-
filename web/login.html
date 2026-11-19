@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#193832" />
+    <meta name="description" content="Masuk ke dashboard eksperimen Fuzzy CH WSN." />
+    <title>Masuk · Fuzzy CH WSN</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" defer></script>
+    <link rel="stylesheet" href="/tailwind.css" />
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/auth-client.js" defer></script>
+    <script src="/login.js" defer></script>
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <section class="login-intro" aria-labelledby="loginIntroTitle">
+        <a class="login-brand" href="/login.html" aria-label="Fuzzy CH WSN">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="18" r="3" fill="currentColor" />
+              <circle cx="18" cy="7" r="2.2" fill="currentColor" />
+              <circle cx="27.5" cy="12.5" r="2.2" fill="currentColor" />
+              <circle cx="27.5" cy="23.5" r="2.2" fill="currentColor" />
+              <circle cx="18" cy="29" r="2.2" fill="currentColor" />
+              <circle cx="8.5" cy="23.5" r="2.2" fill="currentColor" />
+              <circle cx="8.5" cy="12.5" r="2.2" fill="currentColor" />
+              <path d="M18 10v5m7.7-.5-4.3 2.5m4.3 5-4.3-2.5m-3.4 10v-5M8.3 22l4.3-2.5m-4.3-5 4.3 2.5" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+          </span>
+          <span>Fuzzy CH WSN</span>
+        </a>
+
+        <div class="login-intro-copy">
+          <h1 id="loginIntroTitle">Analisis jaringan sensor dalam satu ruang kerja.</h1>
+          <p>Bandingkan FUZZY, LEACH, dan GWO. Tinjau validasi model, fungsi keanggotaan, lalu jalankan skenario baru.</p>
+          <div class="login-protocols" aria-label="Protokol yang dibandingkan">
+            <span><i class="protocol-dot" aria-hidden="true"></i>FUZZY</span>
+            <span><i class="protocol-dot leach" aria-hidden="true"></i>LEACH</span>
+            <span><i class="protocol-dot gwo" aria-hidden="true"></i>GWO</span>
+          </div>
+        </div>
+
+        <p class="login-credit">Dashboard analisis FUZZY CH WSN</p>
+      </section>
+
+      <section class="login-form-side" aria-labelledby="loginTitle">
+        <div class="login-card">
+          <h2 id="loginTitle">Masuk ke dashboard</h2>
+          <p id="loginSubtitle" class="login-subtitle">Gunakan akun individual yang diberikan administrator.</p>
+
+          <div id="loginMessage" class="login-message hidden" role="alert" aria-live="polite"></div>
+          <form id="loginForm" class="login-form" novalidate>
+            <label class="login-label" for="emailInput">Email</label>
+            <input id="emailInput" class="login-input" type="email" name="email" autocomplete="username" inputmode="email" placeholder="nama@organisasi.id" required />
+
+            <label class="login-label login-password-label" for="passwordInput">Kata sandi</label>
+            <div class="password-wrap">
+              <input id="passwordInput" class="login-input" type="password" name="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required />
+              <button id="togglePassword" class="password-toggle" type="button" aria-label="Tampilkan kata sandi" aria-pressed="false">
+                <svg class="eye-open" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M2.2 10s2.7-5 7.8-5 7.8 5 7.8 5-2.7 5-7.8 5-7.8-5-7.8-5Z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.2" stroke="currentColor" stroke-width="1.5"/></svg>
+                <svg class="eye-closed hidden" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M3 3 17 17M8.6 5.2A8.4 8.4 0 0 1 10 5c5.1 0 7.8 5 7.8 5a12 12 0 0 1-2.1 2.7M6 6.5C3.6 7.8 2.2 10 2.2 10s2.7 5 7.8 5c.9 0 1.7-.2 2.4-.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 8.6a2 2 0 0 0 2.8 2.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+
+            <button id="loginButton" class="login-submit" type="submit" disabled>
+              <span class="login-spinner hidden" aria-hidden="true"></span>
+              <span id="loginButtonText">Masuk</span>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M4 10h11m-4.5-4.5L15 10l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
+
+          <form id="passwordSetupForm" class="login-form" hidden novalidate>
+            <p class="setup-email" id="setupEmail"></p>
+
+            <label class="login-label" for="newPasswordInput">Kata sandi baru</label>
+            <input id="newPasswordInput" class="login-input" type="password" name="new-password" autocomplete="new-password" placeholder="Minimal 10 karakter" minlength="10" required />
+
+            <label class="login-label login-password-label" for="confirmPasswordInput">Ulangi kata sandi</label>
+            <input id="confirmPasswordInput" class="login-input" type="password" name="confirm-password" autocomplete="new-password" placeholder="Ketik ulang kata sandi" minlength="10" required />
+
+            <button id="savePasswordButton" class="login-submit" type="submit" disabled>
+              <span class="login-spinner hidden" aria-hidden="true"></span>
+              <span id="savePasswordButtonText">Simpan kata sandi</span>
+            </button>
+          </form>
+
+          <p id="loginHelp" class="login-help">Belum memiliki akun? Hubungi administrator proyek untuk meminta akses.</p>
+          <p id="setupHelp" class="login-help" hidden>Gunakan kata sandi yang berbeda dari akun lain. Setelah tersimpan, Anda akan masuk ke dashboard.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

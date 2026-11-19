@@ -30,10 +30,8 @@ tetap memakai mesin Python yang sama dengan CLI. Jalankan server lokal dengan:
     py -m pip install -r requirements.txt
     py app.py
 
-Buka **http://localhost:8000**. Untuk deployment, jalankan aplikasi sebagai
-Python web service dan gunakan perintah mulai `python app.py`. Server membaca
-port dari variabel lingkungan `PORT` yang disediakan penyedia hosting.
-Konfigurasi Render tersedia di `render.yaml`.
+Buka **http://localhost:8000**. Aplikasi produksi dikonfigurasi untuk Vercel:
+`vercel.json` menyajikan aset dari `web/` dan menjalankan API Python.
 
 Tailwind CSS sudah dikompilasi ke `web/tailwind.css`; Node.js hanya diperlukan
 jika Anda mengubah utility class dan ingin membangunnya ulang:
@@ -41,9 +39,39 @@ jika Anda mengubah utility class dan ingin membangunnya ulang:
     npm install
     npm run build:css
 
-Untuk menyiapkan deployment di Render, hubungkan repo GitHub proyek lalu buat
-Web Service dari repo tersebut. Render akan membaca `render.yaml`, memasang
-dependensi Python, dan menjalankan server pada URL publik.
+### Login dan akses rekan
+
+Dashboard memakai Supabase Auth dengan email dan kata sandi individual. Tidak
+ada pendaftaran publik. Setelah proyek Supabase tersedia, tambahkan variabel
+berikut pada **Vercel → Project → Settings → Environment Variables**:
+
+| Nama | Isi |
+|---|---|
+| `SUPABASE_URL` | URL proyek Supabase |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key proyek Supabase |
+| `DASHBOARD_ALLOWED_EMAILS` | Daftar email yang boleh masuk, dipisahkan koma |
+
+Di Supabase **Authentication → URL Configuration**, set Site URL ke
+`https://fuzzy-ch-wsn-dashboard.vercel.app` dan tambahkan
+`https://fuzzy-ch-wsn-dashboard.vercel.app/login.html` ke daftar redirect.
+Undangan yang memakai Site URL bawaan akan diarahkan otomatis ke formulir
+aktivasi di `/login.html`. Matikan pendaftaran email publik di
+**Authentication → Sign In / Providers**. Undang setiap rekan dari
+**Authentication → Users → Add user → Send invitation**. Saat pertama membuka
+tautan undangan, mereka membuat kata sandi pribadi di halaman masuk. Masukkan
+email yang sama ke
+`DASHBOARD_ALLOWED_EMAILS`. Setelah memperbarui variabel lingkungan, buat
+deployment Vercel baru. API memeriksa sesi dan daftar email pada setiap
+permintaan data maupun simulasi. Jangan gunakan `service_role` atau secret key
+untuk konfigurasi ini.
+
+Supabase SMTP bawaan hanya mengirim email autentikasi kepada anggota organisasi
+Supabase. Untuk mengundang rekan di luar organisasi, konfigurasi SMTP khusus di
+Supabase sebelum mengirim undangan.
+
+Tanpa konfigurasi Supabase, halaman masuk tetap tampil tetapi data dan simulasi
+tidak tersedia. Jika repository GitHub masih publik, login dashboard tidak
+menyembunyikan kode maupun file hasil yang tersedia di repository.
 
 Dashboard menampilkan ringkasan eksperimen, hasil validasi topologi, kurva
 fungsi keanggotaan, dan simulasi baru untuk membandingkan FUZZY, LEACH, serta
