@@ -3,33 +3,29 @@ const state = { datasets: [], datasetId: "results", dashboard: null, simulation:
 const viewText = {
   hasil: {
     title: "Ringkasan hasil",
-    eyebrow: "HASIL TERSIMPAN",
     description: "Membandingkan umur jaringan dan keberhasilan pengiriman paket pada setiap protokol.",
     breadcrumb: "RINGKASAN HASIL",
   },
   validasi: {
     title: "Validasi model",
-    eyebrow: "HASIL VALIDASI",
     description: "Membaca performa model FUZZY dan GWO pada topologi yang tidak digunakan dalam optimasi.",
     breadcrumb: "VALIDASI MODEL",
   },
   membership: {
     title: "Fungsi keanggotaan",
-    eyebrow: "PARAMETER FUZZY",
     description: "Melihat cara energi, jarak, dan jumlah tetangga diterjemahkan menjadi skor kandidat cluster head.",
     breadcrumb: "FUNGSI KEANGGOTAAN",
   },
   simulasi: {
     title: "Simulasi baru",
-    eyebrow: "EKSPERIMEN INTERAKTIF",
     description: "Ubah parameter jaringan dan lihat perbandingan tiga protokol pada topologi yang sama.",
     breadcrumb: "SIMULASI BARU",
   },
 };
 
-const protocolColors = { FUZZY: "#24766b", LEACH: "#6687a0", GWO: "#d8904e" };
-const axisColor = "#83908b";
-const gridColor = "#edf1ed";
+const protocolColors = { FUZZY: "#24675c", LEACH: "#53778c", GWO: "#a95f30" };
+const axisColor = "#53665f";
+const gridColor = "#e4eae5";
 const numberFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
 const decimalFormat = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -66,7 +62,6 @@ function setView(view) {
   });
   const copy = viewText[view];
   $("#pageTitle").textContent = copy.title;
-  $("#pageEyebrow").textContent = copy.eyebrow;
   $("#pageDescription").textContent = copy.description;
   $("#breadcrumb").innerHTML = `RUANG ANALISIS <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
   $("#downloadPrimary").classList.toggle("hidden", view !== "hasil");
@@ -108,13 +103,13 @@ function chartOptions(yLabel, legend = true) {
       legend: {
         display: legend,
         position: "bottom",
-        labels: { color: "#64736f", boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: "circle", padding: 16, font: { size: 10 } },
+        labels: { color: "#53665f", boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: "circle", padding: 16, font: { size: 12 } },
       },
-      tooltip: { backgroundColor: "#18332f", padding: 10, titleFont: { size: 11 }, bodyFont: { size: 11 }, displayColors: true },
+      tooltip: { backgroundColor: "#193832", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 }, displayColors: true },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 10 } }, border: { display: false } },
-      y: { beginAtZero: true, title: { display: Boolean(yLabel), text: yLabel, color: axisColor, font: { size: 10, weight: "normal" } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { size: 10 } }, border: { display: false } },
+      x: { grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 12 } }, border: { display: false } },
+      y: { beginAtZero: true, title: { display: Boolean(yLabel), text: yLabel, color: axisColor, font: { size: 12, weight: "normal" } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { size: 12 } }, border: { display: false } },
     },
   };
 }
@@ -267,7 +262,7 @@ function renderMembershipCharts(membership) {
     { key: "output", title: "Skor kelayakan", unit: "skor Mamdani", min: 0, max: 1 },
   ];
   grid.innerHTML = definitions.map((item) => `<article class="membership-card"><h3>${item.title}</h3><p>${item.unit}</p><div class="membership-chart"><canvas id="mf-${item.key}" role="img" aria-label="Grafik fungsi keanggotaan ${item.title.toLowerCase()}"></canvas></div></article>`).join("");
-  const colors = ["#24766b", "#d8904e", "#6687a0"];
+  const colors = ["#24675c", "#a95f30", "#53778c"];
   definitions.forEach((definition) => {
     const functions = membership[definition.key] || {};
     const values = Array.from({ length: 121 }, (_, index) => definition.min + (definition.max - definition.min) * index / 120);
