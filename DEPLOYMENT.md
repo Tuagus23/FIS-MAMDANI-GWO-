@@ -52,3 +52,18 @@ Repo GitHub ini publik, sehingga kode dan data yang sudah ada di repo dapat
 dilihat siapa saja. Web service Render juga dapat diakses publik lewat URL-nya.
 Pilih plan hosting yang sesuai sebelum membuat layanan.
 
+# Vercel
+
+Vercel menyajikan antarmuka statis dari folder `web` melalui CDN. API Python
+berjalan sebagai Vercel Function pada `api/[...path].py`.
+
+1. Impor repo `Tuagus23/FIS-MAMDANI-GWO-` di Vercel.
+2. Biarkan **Root Directory** di repo utama dan gunakan pengaturan dari
+   `vercel.json`.
+3. Deploy. Tailwind CSS dibangun dengan `npm run build:css`; aset hasilnya
+   disajikan dari `web`.
+4. Setelah deployment selesai, `/api/health` menampilkan status API.
+
+Dashboard publik dan endpoint simulasi dapat diakses oleh siapa pun yang
+memiliki URL deployment. Simulasi dibatasi maksimal 60 node dan 2.000 ronde.
+
