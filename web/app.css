@@ -342,6 +342,14 @@ abbr[title] { text-decoration: none; }
 .login-protocols .protocol-dot { width: 8px; height: 8px; background: #a9d0c0; }
 .login-protocols .protocol-dot.leach { background: #8cb0c3; }
 .login-protocols .protocol-dot.gwo { background: #e3a77c; }
+.login-qr { display: flex; width: fit-content; max-width: 100%; align-items: center; gap: 18px; border: 1px solid rgba(255,255,255,.28); border-radius: 10px; padding: 12px; background: rgba(255,255,255,.07); }
+.login-qr-copy { max-width: 220px; }
+.login-qr h2 { color: #fff; font-size: 15px; font-weight: 650; }
+.login-qr p { margin-top: 5px; color: #d5e3dc; font-size: 13px; line-height: 1.45; }
+.login-qr a { display: inline-block; margin-top: 8px; color: #d6eee3; font-size: 13px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.login-qr a:hover { color: #fff; }
+.login-qr a:focus-visible { border-radius: 2px; outline: 2px solid #fff; outline-offset: 3px; }
+.login-qr img { width: 96px; height: 96px; flex: 0 0 96px; border: 4px solid #fff; border-radius: 5px; background: #fff; image-rendering: pixelated; }
 .login-credit { color: #c3d4ce; font-size: 13px; }
 .login-form-side { display: grid; min-width: 0; place-items: center; padding: 56px 32px; background: #fbfcfb; }
 .login-card { width: min(100%, 420px); }
@@ -416,6 +424,7 @@ abbr[title] { text-decoration: none; }
   .login-intro-copy h1 { max-width: 540px; font-size: 32px; }
   .login-intro-copy > p { margin-top: 13px; font-size: 15px; }
   .login-protocols { margin-top: 20px; }
+  .login-qr { display: none; }
   .login-credit { display: none; }
   .login-form-side { min-height: 480px; padding: 48px 26px 56px; }
 }
