@@ -231,10 +231,10 @@
             <div id="membershipEmpty" class="notice hidden" role="status">Parameter fungsi keanggotaan tidak ditemukan.</div>
             <div class="membership-model-key" aria-label="Arti gaya garis pada grafik fungsi keanggotaan">
               <span><i class="membership-key-line is-initial" aria-hidden="true"></i>MF awal</span>
-              <span><i class="membership-key-line is-optimized" aria-hidden="true"></i>GWO awal</span>
+              <span><i class="membership-key-line is-optimized" aria-hidden="true"></i>GWO · hasil optimasi</span>
             </div>
-            <div id="membershipGrid" class="grid grid-cols-1 gap-5 lg:grid-cols-2"></div>
-            <div class="info-strip"><span class="info-strip-mark" aria-hidden="true">i</span><p>Derajat 0 berarti tidak termasuk kategori, sedangkan 1 berarti sepenuhnya termasuk. Garis putus-putus menunjukkan MF awal. Label GWO awal menunjukkan kurva hasil optimasi GWO dengan garis solid. Kurva output tetap memakai MF awal karena tidak dioptimalkan.</p></div>
+            <div id="membershipGrid" class="grid grid-cols-1 gap-5 xl:grid-cols-2"></div>
+            <div class="info-strip"><span class="info-strip-mark" aria-hidden="true">i</span><p>Panel kiri menampilkan MF awal, sedangkan panel kanan menampilkan hasil optimasi GWO. Warna kurva membedakan kategori rendah, sedang, dan tinggi. Garis putus-putus menandai MF awal; garis solid menandai hasil GWO. Skor kelayakan tetap memakai MF awal karena fungsi output tidak dioptimalkan.</p></div>
             <button id="downloadMembership" class="button button-secondary" type="button">Unduh parameter MF (JSON)</button>
           </section>
 

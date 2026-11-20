@@ -131,7 +131,16 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .membership-card { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: white; }
 .membership-card h3 { color: var(--ink); font-size: 14px; font-weight: 650; }
 .membership-card p { margin-top: 4px; color: #53665f; font-size: 13px; }
-.membership-chart { position: relative; height: 210px; margin-top: 13px; }
+.membership-comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.membership-series-panel { min-width: 0; border: 1px solid #dce5df; border-radius: 9px; padding: 12px; background: #fff; }
+.membership-series-panel.is-initial { border-top: 3px solid #075985; border-color: #c6d8e8; border-top-color: #075985; background: #f4f8fc; }
+.membership-series-panel.is-gwo { border-top: 3px solid #c2410c; border-color: #ead2c5; border-top-color: #c2410c; background: #fff7f2; }
+.membership-series-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.membership-series-heading h4 { color: var(--ink); font-size: 14px; font-weight: 700; }
+.membership-series-heading span { color: #40534e; font-size: 13px; text-align: right; }
+.membership-chart { position: relative; height: 220px; margin-top: 10px; }
+.membership-series-panel.is-unoptimized { display: flex; flex-direction: column; }
+.membership-static-note { display: flex; min-height: 220px; align-items: center; margin: 10px 0 0 !important; border: 1px dashed #9aaca1; border-radius: 7px; padding: 16px; background: #fff; color: #40534e !important; font-size: 14px !important; line-height: 1.55; }
 .info-strip { display: flex; align-items: flex-start; gap: 11px; border: 1px solid #dce7df; border-radius: 10px; padding: 13px 15px; background: #edf4ef; }
 .info-strip-mark { display: grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #d7e8dd; color: #316253; font-size: 13px; font-weight: 700; }
 .info-strip p { color: #526d62; font-size: 14px; line-height: 1.55; }
@@ -291,12 +300,13 @@ canvas { max-width: 100%; }
 .membership-model-key { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin: 0 0 2px; color: #40534e; font-size: 14px; }
 .membership-model-key span { display: inline-flex; align-items: center; gap: 9px; }
 .membership-key-line { display: inline-block; width: 30px; border-top: 3px solid #147591; }
-.membership-key-line.is-initial { border-top-style: dashed; border-top-color: #59656f; }
-.membership-key-line.is-optimized { height: 3px; border: 0; background: linear-gradient(90deg, #136f85, #7040a0, #347844); }
+.membership-key-line.is-initial { border-top-style: dashed; border-top-color: #075985; }
+.membership-key-line.is-optimized { height: 3px; border: 0; background: linear-gradient(90deg, #0f766e, #c2410c, #166534); }
 abbr[title] { text-decoration: none; }
 .auth-gate.hidden { display: none; }
 .chart-data-details .table-wrap, .metric-glossary .metric-guide { max-height: 360px; overflow: auto; }
 @media (max-width: 639px) {
+  .membership-comparison-grid { grid-template-columns: minmax(0, 1fr); }
   .metric-card + .metric-card { border-left: 0; }
   .metric-card:nth-child(even) { border-left: 1px solid #d6dfd9; }
   .metric-card:nth-child(n+3) { border-top: 1px solid #d6dfd9; }

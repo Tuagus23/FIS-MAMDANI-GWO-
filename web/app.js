@@ -31,8 +31,8 @@ const protocolStyles = {
   LEACH: { pointStyle: "rect" },
   GWO: { pointStyle: "triangle" },
 };
-const membershipInitialColors = ["#4d5963", "#697680", "#828e98"];
-const membershipOptimizedColors = ["#136f85", "#7040a0", "#347844"];
+const membershipInitialColors = ["#075985", "#9F1239", "#6D28D9"];
+const membershipOptimizedColors = ["#0F766E", "#C2410C", "#166534"];
 const axisColor = "#53665f";
 const gridColor = "#e4eae5";
 const numberFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
@@ -491,7 +491,13 @@ function renderMembershipCharts(membership, baseline, ranges) {
     { key: "neighbors", title: "Jumlah tetangga", unit: "node" },
     { key: "output", title: "Skor kelayakan", unit: "skor Mamdani" },
   ];
-  grid.innerHTML = definitions.map((item) => `<article class="membership-card"><h3>${item.title}</h3><p>${item.unit}</p><div class="membership-chart"><canvas id="mf-${item.key}" role="img" aria-label="Grafik fungsi keanggotaan ${item.title.toLowerCase()}"></canvas></div><details class="chart-data-details" data-membership-details="${item.key}"><summary>Lihat tabel nilai kurva</summary><div class="table-wrap" data-membership-table="${item.key}"></div></details></article>`).join("");
+  grid.innerHTML = definitions.map((item) => {
+    const isOutput = item.key === "output";
+    const gwoPanel = isOutput
+      ? `<section class="membership-series-panel is-gwo is-unoptimized" aria-label="GWO tidak diterapkan pada ${item.title.toLowerCase()}"><header class="membership-series-heading"><h4>GWO</h4><span>Tanpa optimasi</span></header><p class="membership-static-note">Skor kelayakan tetap memakai kurva MF awal.</p></section>`
+      : `<section class="membership-series-panel is-gwo"><header class="membership-series-heading"><h4>GWO</h4><span>Hasil optimasi</span></header><div class="membership-chart"><canvas id="mf-${item.key}-gwo" role="img" aria-label="Fungsi keanggotaan ${item.title.toLowerCase()} setelah optimasi GWO"></canvas></div></section>`;
+    return `<article class="membership-card"><h3>${item.title}</h3><p>${item.unit}</p><div class="membership-comparison-grid"><section class="membership-series-panel is-initial"><header class="membership-series-heading"><h4>MF awal</h4><span>Sebelum optimasi</span></header><div class="membership-chart"><canvas id="mf-${item.key}-initial" role="img" aria-label="Fungsi keanggotaan ${item.title.toLowerCase()} sebelum optimasi"></canvas></div></section>${gwoPanel}</div><details class="chart-data-details" data-membership-details="${item.key}"><summary>Lihat tabel nilai kurva</summary><div class="table-wrap" data-membership-table="${item.key}"></div></details></article>`;
+  }).join("");
   definitions.forEach((definition) => {
     const axis = ranges?.[definition.key] || { min: 0, max: 1 };
     const min = finiteNumber(axis.min) ?? 0;
@@ -499,37 +505,34 @@ function renderMembershipCharts(membership, baseline, ranges) {
     const values = Array.from({ length: 121 }, (_, index) => min + (max - min) * index / 120);
     const functions = membership[definition.key] || {};
     const initialFunctions = baseline[definition.key] || {};
-    const models = definition.key === "output"
-      ? [{ name: "MF awal (tetap)", functions: initialFunctions, dash: [6, 4] }]
-      : [
-        { name: "MF awal", functions: initialFunctions, dash: [6, 4] },
-        { name: "GWO awal", functions, dash: [] },
-      ];
+    const models = [{ id: "initial", functions: initialFunctions, colors: membershipInitialColors, dash: [6, 4] }];
+    if (definition.key !== "output") models.push({ id: "gwo", functions, colors: membershipOptimizedColors, dash: [] });
     const labels = [...new Set(models.flatMap((model) => Object.keys(model.functions)))];
-    replaceChart(`mf-${definition.key}`, `mf-${definition.key}`, {
-      type: "line",
-      data: {
-        labels: values.map((value) => Number(value.toFixed(2))),
-        datasets: labels.flatMap((label, index) => models.filter((model) => model.functions[label]).map((model) => {
-          const palette = model.name.startsWith("GWO") ? membershipOptimizedColors : membershipInitialColors;
-          const color = palette[index % palette.length];
-          const spec = model.functions[label];
-          return {
-            label: `${model.name} · ${label}`,
-            data: values.map((value) => membershipDegree(spec.shape, spec.points, value)),
-            borderColor: color, backgroundColor: color, borderWidth: model.name.startsWith("GWO") ? 2.5 : 2,
-            borderDash: model.dash, pointRadius: 0, tension: 0,
-          };
-        })),
-      },
-      options: {
-        ...chartOptions("Derajat keanggotaan"),
-        plugins: { ...chartOptions("").plugins, legend: { ...chartOptions("").plugins.legend, labels: { ...chartOptions("").plugins.legend.labels, usePointStyle: false, boxWidth: 30, boxHeight: 2, padding: 11 } } },
-        scales: {
-          x: { ...chartOptions("").scales.x, ticks: { ...chartOptions("").scales.x.ticks, maxTicksLimit: 5 } },
-          y: { ...chartOptions("").scales.y, min: 0, max: 1, ticks: { ...chartOptions("").scales.y.ticks, stepSize: 0.25 } },
+    models.forEach((model) => {
+      replaceChart(`mf-${definition.key}-${model.id}`, `mf-${definition.key}-${model.id}`, {
+        type: "line",
+        data: {
+          labels: values.map((value) => Number(value.toFixed(2))),
+          datasets: labels.filter((label) => model.functions[label]).map((label, index) => {
+            const spec = model.functions[label];
+            const color = model.colors[index % model.colors.length];
+            return {
+              label,
+              data: values.map((value) => membershipDegree(spec.shape, spec.points, value)),
+              borderColor: color, backgroundColor: color, borderWidth: model.id === "gwo" ? 3 : 2.5,
+              borderDash: model.dash, pointRadius: 0, tension: 0,
+            };
+          }),
         },
-      },
+        options: {
+          ...chartOptions("Derajat keanggotaan"),
+          plugins: { ...chartOptions("").plugins, legend: { ...chartOptions("").plugins.legend, labels: { ...chartOptions("").plugins.legend.labels, usePointStyle: false, boxWidth: 20, boxHeight: 2, padding: 9 } } },
+          scales: {
+            x: { ...chartOptions("").scales.x, ticks: { ...chartOptions("").scales.x.ticks, maxTicksLimit: 5 } },
+            y: { ...chartOptions("").scales.y, min: 0, max: 1, ticks: { ...chartOptions("").scales.y.ticks, stepSize: 0.25 } },
+          },
+        },
+      });
     });
   });
   grid.querySelectorAll("[data-membership-details]").forEach((details) => details.addEventListener("toggle", () => {
@@ -545,7 +548,7 @@ function renderMembershipCharts(membership, baseline, ranges) {
     ])].sort((a, b) => a - b);
     const modelList = key === "output"
       ? [{ name: "MF awal (tetap)", functions: baseline[key] || {} }]
-      : [{ name: "MF awal", functions: baseline[key] || {} }, { name: "GWO awal", functions: membership[key] || {} }];
+      : [{ name: "MF awal", functions: baseline[key] || {} }, { name: "GWO", functions: membership[key] || {} }];
     const labels = [...new Set(modelList.flatMap((model) => Object.keys(model.functions)))];
     const columns = labels.flatMap((label) => modelList.filter((model) => model.functions[label]).map((model) => {
       const spec = model.functions[label];
