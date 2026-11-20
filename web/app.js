@@ -788,10 +788,13 @@ async function start() {
       return;
     }
 
-    $("#accountEmail").textContent = session.user.email || "Akun aktif";
-    $("#accountEmail").title = session.user.email || "Akun aktif";
     const response = await authenticatedFetch("/api/datasets", { headers: { Accept: "application/json" } });
     const data = await readApiResponse(response, "Daftar dataset tidak dapat dimuat.");
+    const identity = data.identity || {};
+    const accountLabel = identity.name || session.user.email || "Akun aktif";
+    const roleLabel = identity.role === "super_admin" ? " · Super admin" : "";
+    $("#accountEmail").textContent = `${accountLabel}${roleLabel}`;
+    $("#accountEmail").title = accountLabel;
     setConnectionStatus("Terhubung");
     state.datasets = data.datasets;
     state.datasetId = data.default || "results";

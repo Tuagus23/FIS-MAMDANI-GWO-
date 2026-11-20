@@ -12,6 +12,7 @@ from auth import (
     AuthForbidden,
     AuthProviderUnavailable,
     public_auth_config,
+    sign_in_with_identifier,
     verify_authorization_header,
 )
 from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
@@ -38,6 +39,10 @@ class handler(BaseHTTPRequestHandler):
             self.send_json(
                 {
                     "default": "results",
+                    "identity": {
+                        "name": self.auth_identity["name"],
+                        "role": self.auth_identity["role"],
+                    },
                     "datasets": [
                         {"id": key, "label": value["label"], "description": value["description"]}
                         for key, value in DATASETS.items()
@@ -65,7 +70,11 @@ class handler(BaseHTTPRequestHandler):
         self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
 
     def do_POST(self) -> None:
-        if urlparse(self.path).path != "/api/simulate":
+        request_path = urlparse(self.path).path
+        if request_path == "/api/login":
+            self.sign_in()
+            return
+        if request_path != "/api/simulate":
             self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
             return
 
@@ -106,9 +115,39 @@ class handler(BaseHTTPRequestHandler):
         finally:
             SIMULATION_LOCK.release()
 
+    def sign_in(self) -> None:
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+            if content_length <= 0 or content_length > 4096:
+                raise ValueError("Permintaan login tidak valid.")
+            payload = json.loads(self.rfile.read(content_length))
+            if not isinstance(payload, dict):
+                raise ValueError("Permintaan login tidak valid.")
+            identifier = payload.get("identifier")
+            password = payload.get("password")
+            if not isinstance(identifier, str) or not isinstance(password, str):
+                raise ValueError("Masukkan nama akhir/NIM dan kata sandi.")
+            if len(identifier) > 100 or len(password) > 256:
+                raise ValueError("Permintaan login tidak valid.")
+        except (ValueError, json.JSONDecodeError) as error:
+            self.send_json({"error": str(error) or "Permintaan login tidak valid."}, status=400)
+            return
+
+        try:
+            self.send_json(sign_in_with_identifier(identifier, password))
+        except AuthConfigurationError as error:
+            self.send_json({"error": str(error)}, status=503)
+        except AuthDenied as error:
+            self.send_json({"error": str(error)}, status=401)
+        except AuthProviderUnavailable:
+            self.send_json(
+                {"error": "Layanan login tidak dapat dihubungi. Coba lagi sebentar."},
+                status=503,
+            )
+
     def require_authentication(self) -> bool:
         try:
-            verify_authorization_header(self.headers.get("Authorization", ""))
+            self.auth_identity = verify_authorization_header(self.headers.get("Authorization", ""))
             return True
         except AuthConfigurationError as error:
             self.send_json({"error": str(error)}, status=503)

@@ -4,7 +4,11 @@ const loginForm = document.querySelector("#loginForm");
 const loginButton = document.querySelector("#loginButton");
 const loginButtonText = document.querySelector("#loginButtonText");
 const loginMessage = document.querySelector("#loginMessage");
+const identifierInput = document.querySelector("#identifierInput");
 const passwordInput = document.querySelector("#passwordInput");
+const audioFallback = document.querySelector("#audioFallback");
+const loginSuccessAudio = document.querySelector("#loginSuccessAudio");
+const loginFailureAudio = document.querySelector("#loginFailureAudio");
 const passwordSetupForm = document.querySelector("#passwordSetupForm");
 const savePasswordButton = document.querySelector("#savePasswordButton");
 const savePasswordButtonText = document.querySelector("#savePasswordButtonText");
@@ -44,6 +48,58 @@ function setPasswordBusy(busy) {
   savePasswordButton.classList.toggle("is-busy", busy);
   savePasswordButton.querySelector(".login-spinner").classList.toggle("hidden", !busy);
   savePasswordButtonText.textContent = busy ? "Menyimpan…" : "Simpan kata sandi";
+}
+
+function startAudio(audio) {
+  audio.pause();
+  audio.currentTime = 0;
+  return audio.play().then(() => true).catch(() => false);
+}
+
+function waitForAudio(audio) {
+  return new Promise((resolve) => {
+    if (audio.ended) return resolve();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      audio.removeEventListener("ended", finish);
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, Math.min((audio.duration || 4) * 1000 + 500, 10000));
+    audio.addEventListener("ended", finish, { once: true });
+  });
+}
+
+async function playFailureAudio() {
+  audioFallback.hidden = true;
+  if (await startAudio(loginFailureAudio)) return;
+  audioFallback.textContent = "Putar ulang audio";
+  audioFallback.hidden = false;
+  audioFallback.onclick = () => {
+    audioFallback.hidden = true;
+    startAudio(loginFailureAudio);
+  };
+}
+
+async function playSuccessAudio() {
+  loginForm.hidden = true;
+  document.querySelector("#loginHelp").hidden = true;
+  showMessage("Login berhasil. Memutar audio sebelum membuka dashboard.", "info");
+  if (await startAudio(loginSuccessAudio)) {
+    await waitForAudio(loginSuccessAudio);
+    window.location.replace("/");
+    return;
+  }
+
+  audioFallback.textContent = "Putar audio dan buka dashboard";
+  audioFallback.hidden = false;
+  audioFallback.onclick = async () => {
+    audioFallback.hidden = true;
+    if (await startAudio(loginSuccessAudio)) await waitForAudio(loginSuccessAudio);
+    window.location.replace("/");
+  };
 }
 
 async function confirmAccess(session) {
@@ -93,23 +149,52 @@ async function initializeLogin() {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   loginMessage.classList.add("hidden");
-  const email = document.querySelector("#emailInput").value.trim();
+  const identifier = identifierInput.value.trim();
   const password = passwordInput.value;
-  if (!email || !password) {
-    showMessage("Masukkan email dan kata sandi Anda.");
+  if (!identifier || !password) {
+    showMessage("Masukkan nama akhir/NIM dan kata sandi.");
     return;
   }
 
   setBusy(true);
   try {
-    const { data, error } = await authClient.auth.signInWithPassword({ email, password });
-    if (error || !data.session) {
-      showMessage("Email atau kata sandi belum benar. Periksa kembali lalu coba lagi.");
+    let session;
+    if (identifier.includes("@")) {
+      const { data, error } = await authClient.auth.signInWithPassword({ email: identifier, password });
+      if (error && ![400, 401].includes(error.status)) throw error;
+      session = data?.session;
+    } else {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ identifier, password }),
+        cache: "no-store",
+      });
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        showMessage(result.error || "Nama akhir/NIM atau kata sandi belum benar. Periksa kembali lalu coba lagi.");
+        await playFailureAudio();
+        return;
+      }
+      if (!response.ok) throw new Error(result.error || "Layanan login belum tersedia. Coba lagi sebentar.");
+      const { data, error } = await authClient.auth.setSession(result);
+      if (error) throw error;
+      session = data?.session;
+    }
+
+    if (!session) {
+      showMessage("Nama akhir/NIM atau kata sandi belum benar. Periksa kembali lalu coba lagi.");
+      await playFailureAudio();
       return;
     }
-    if (await confirmAccess(data.session)) window.location.replace("/");
+    if (await confirmAccess(session)) {
+      await playSuccessAudio();
+    } else {
+      await playFailureAudio();
+    }
   } catch (error) {
     showMessage(error.message || "Tidak dapat menghubungi layanan login. Coba lagi sebentar.");
+    await playFailureAudio();
   } finally {
     setBusy(false);
   }

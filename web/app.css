@@ -396,6 +396,7 @@ abbr[title] { text-decoration: none; }
   font-weight: 650;
   transition: background-color .16s ease, border-color .16s ease;
 }
+#audioFallback[hidden] { display: none; }
 .login-submit svg { width: 18px; height: 18px; }
 .login-submit:hover:not(:disabled) { border-color: #1b554b; background: #1b554b; }
 .login-submit:disabled { cursor: wait; background: #647c73; border-color: #647c73; }

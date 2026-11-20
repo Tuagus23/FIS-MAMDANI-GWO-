@@ -41,29 +41,52 @@ jika Anda mengubah utility class dan ingin membangunnya ulang:
 
 ### Login dan akses rekan
 
-Dashboard memakai Supabase Auth dengan email dan kata sandi individual. Tidak
-ada pendaftaran publik. Setelah proyek Supabase tersedia, tambahkan variabel
-berikut pada **Vercel → Project → Settings → Environment Variables**:
+Dashboard memakai Supabase Auth. Rekan dapat masuk menggunakan nama akhir atau
+NIM, sementara akun email yang sudah ada tetap dapat masuk dengan email. Tidak
+ada pendaftaran publik. Atur variabel berikut pada **Vercel → Project →
+Settings → Environment Variables**:
 
 | Nama | Isi |
 |---|---|
 | `SUPABASE_URL` | URL proyek Supabase |
 | `SUPABASE_PUBLISHABLE_KEY` | Publishable key proyek Supabase |
 | `DASHBOARD_ALLOWED_EMAILS` | Daftar email yang boleh masuk, dipisahkan koma |
+| `DASHBOARD_LOGIN_USERS` | JSON privat berisi akun roster (nama, NIM atau `login_id`, dan peran) |
+
+Contoh bentuk `DASHBOARD_LOGIN_USERS` (jangan masukkan nomor telepon):
+
+```json
+[
+  {"nim":"2300000000","name":"Contoh Nama Mahasiswa","role":"member"},
+  {"login_id":"supriana","name":"I Wayan Supriana","role":"super_admin"}
+]
+```
+
+Untuk setiap akun pada JSON itu, buat pengguna di **Supabase → Authentication
+→ Users → Add user** dengan alamat internal `<NIM>@auth.fuzzy-ch-wsn-dashboard.vercel.app`;
+akun dosen memakai `supriana@auth.fuzzy-ch-wsn-dashboard.vercel.app`. Tandai
+email sebagai terkonfirmasi agar Supabase tidak mengirim tautan aktivasi ke
+alamat internal. Gunakan kata sandi yang diberikan administrator. Alamat ini
+hanya menjadi ID internal untuk Supabase dan tidak menerima email, jadi
+pemulihan kata sandi perlu dilakukan administrator. Jangan menyimpan kata sandi
+di source code atau variabel roster.
+
+Pengguna masuk menggunakan nama akhir bila unik atau NIM. Nama akhir yang sama
+harus dibedakan dengan NIM. Peran `super_admin` ditentukan oleh konfigurasi
+server dan ditampilkan sebagai label akun; aplikasi saat ini belum menyediakan
+panel administrasi pengguna.
 
 Di Supabase **Authentication → URL Configuration**, set Site URL ke
 `https://fuzzy-ch-wsn-dashboard.vercel.app` dan tambahkan
 `https://fuzzy-ch-wsn-dashboard.vercel.app/login.html` ke daftar redirect.
-Undangan yang memakai Site URL bawaan akan diarahkan otomatis ke formulir
-aktivasi di `/login.html`. Matikan pendaftaran email publik di
-**Authentication → Sign In / Providers**. Undang setiap rekan dari
-**Authentication → Users → Add user → Send invitation**. Saat pertama membuka
-tautan undangan, mereka membuat kata sandi pribadi di halaman masuk. Masukkan
-email yang sama ke
-`DASHBOARD_ALLOWED_EMAILS`. Setelah memperbarui variabel lingkungan, buat
-deployment Vercel baru. API memeriksa sesi dan daftar email pada setiap
+Undangan email yang memakai Site URL bawaan akan diarahkan otomatis ke formulir
+aktivasi di `/login.html`. Matikan pendaftaran publik di **Authentication →
+Sign In / Providers**. Akun email individual dapat diundang dari
+**Authentication → Users → Add user → Send invitation** dan harus ditambahkan
+ke `DASHBOARD_ALLOWED_EMAILS`. Setelah memperbarui variabel lingkungan, buat
+deployment Vercel baru. API memeriksa sesi dan daftar akun pada setiap
 permintaan data maupun simulasi. Jangan gunakan `service_role` atau secret key
-untuk konfigurasi ini.
+di browser.
 
 Supabase SMTP bawaan hanya mengirim email autentikasi kepada anggota organisasi
 Supabase. Untuk mengundang rekan di luar organisasi, konfigurasi SMTP khusus di

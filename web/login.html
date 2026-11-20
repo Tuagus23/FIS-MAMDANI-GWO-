@@ -51,8 +51,8 @@
 
           <div id="loginMessage" class="login-message hidden" role="alert" aria-live="polite"></div>
           <form id="loginForm" class="login-form" novalidate>
-            <label class="login-label" for="emailInput">Email</label>
-            <input id="emailInput" class="login-input" type="email" name="email" autocomplete="username" inputmode="email" placeholder="nama@organisasi.id" required />
+            <label class="login-label" for="identifierInput">Nama akhir, NIM, atau email</label>
+            <input id="identifierInput" class="login-input" type="text" name="username" autocomplete="username" inputmode="text" placeholder="Masukkan nama akhir, NIM, atau email" required />
 
             <label class="login-label login-password-label" for="passwordInput">Kata sandi</label>
             <div class="password-wrap">
@@ -85,10 +85,13 @@
             </button>
           </form>
 
-          <p id="loginHelp" class="login-help">Belum memiliki akun? Hubungi administrator proyek untuk meminta akses.</p>
+          <button id="audioFallback" class="login-submit" type="button" hidden></button>
+          <p id="loginHelp" class="login-help">Nama akhir yang sama dipakai beberapa orang? Masuk menggunakan NIM.</p>
           <p id="setupHelp" class="login-help" hidden>Gunakan kata sandi yang berbeda dari akun lain. Setelah tersimpan, Anda akan masuk ke dashboard.</p>
         </div>
       </section>
     </main>
+    <audio id="loginSuccessAudio" src="/audio/login-success.mp3" preload="auto"></audio>
+    <audio id="loginFailureAudio" src="/audio/login-failure.mp3" preload="auto"></audio>
   </body>
 </html>
