@@ -500,19 +500,19 @@ function renderMembershipCharts(membership, baseline, ranges) {
     const functions = membership[definition.key] || {};
     const initialFunctions = baseline[definition.key] || {};
     const models = definition.key === "output"
-      ? [{ name: "Mamdani awal (tetap)", functions: initialFunctions, dash: [6, 4] }]
+      ? [{ name: "MF awal (tetap)", functions: initialFunctions, dash: [6, 4] }]
       : [
-        { name: "Mamdani awal", functions: initialFunctions, dash: [6, 4] },
-        { name: "GWO", functions, dash: [] },
+        { name: "MF awal", functions: initialFunctions, dash: [6, 4] },
+        { name: "GWO awal", functions, dash: [] },
       ];
     const labels = [...new Set(models.flatMap((model) => Object.keys(model.functions)))];
     replaceChart(`mf-${definition.key}`, `mf-${definition.key}`, {
       type: "line",
       data: {
         labels: values.map((value) => Number(value.toFixed(2))),
-        datasets: models.flatMap((model) => labels.filter((label) => model.functions[label]).map((label, index) => {
+        datasets: labels.flatMap((label, index) => models.filter((model) => model.functions[label]).map((model) => {
           const palette = model.name.startsWith("GWO") ? membershipOptimizedColors : membershipInitialColors;
-          const color = palette[labels.indexOf(label) % palette.length];
+          const color = palette[index % palette.length];
           const spec = model.functions[label];
           return {
             label: `${model.name} · ${label}`,
@@ -544,13 +544,17 @@ function renderMembershipCharts(membership, baseline, ranges) {
       ...[membership[key], baseline[key]].flatMap((group) => Object.values(group || {}).flatMap((spec) => spec.points)),
     ])].sort((a, b) => a - b);
     const modelList = key === "output"
-      ? [{ name: "Mamdani awal (tetap)", functions: baseline[key] || {} }]
-      : [{ name: "Mamdani awal", functions: baseline[key] || {} }, { name: "GWO", functions: membership[key] || {} }];
-    const columns = modelList.flatMap((model) => Object.entries(model.functions).map(([label, spec]) => ({
-      key: `${model.name}-${label}`,
-      label: `${model.name} · ${label}`,
-      render: (_, row) => formatDecimal(membershipDegree(spec.shape, spec.points, row.x)),
-    })));
+      ? [{ name: "MF awal (tetap)", functions: baseline[key] || {} }]
+      : [{ name: "MF awal", functions: baseline[key] || {} }, { name: "GWO awal", functions: membership[key] || {} }];
+    const labels = [...new Set(modelList.flatMap((model) => Object.keys(model.functions)))];
+    const columns = labels.flatMap((label) => modelList.filter((model) => model.functions[label]).map((model) => {
+      const spec = model.functions[label];
+      return {
+        key: `${model.name}-${label}`,
+        label: `${model.name} · ${label}`,
+        render: (_, row) => formatDecimal(membershipDegree(spec.shape, spec.points, row.x)),
+      };
+    }));
     const tableRows = values.map((x) => ({ x }));
     $( `[data-membership-table="${key}"]`).innerHTML = makeTable([
       { key: "x", label: definition.unit, render: formatDecimal },
