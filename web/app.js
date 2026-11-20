@@ -27,11 +27,12 @@ const viewText = {
 
 const protocolColors = { FUZZY: "#00765e", LEACH: "#3568a8", GWO: "#b34d16" };
 const protocolStyles = {
-  FUZZY: { borderDash: [], pointStyle: "circle" },
-  LEACH: { borderDash: [7, 4], pointStyle: "rect" },
-  GWO: { borderDash: [8, 3, 2, 3], pointStyle: "triangle" },
+  FUZZY: { pointStyle: "circle" },
+  LEACH: { pointStyle: "rect" },
+  GWO: { pointStyle: "triangle" },
 };
-const membershipColors = ["#2d7185", "#76589b", "#4e7b4f"];
+const membershipInitialColors = ["#4d5963", "#697680", "#828e98"];
+const membershipOptimizedColors = ["#136f85", "#7040a0", "#347844"];
 const axisColor = "#53665f";
 const gridColor = "#e4eae5";
 const numberFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
@@ -293,7 +294,7 @@ function renderHistoryChart(rows) {
       labels: rounds,
       datasets: protocols.map((protocol) => {
         const values = new Map(history.filter((row) => row.protocol === protocol).map((row) => [row.round_number, row.alive_nodes]));
-        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, ...protocolStyles[protocol], pointRadius: 0, pointHitRadius: 7, stepped: true, spanGaps: false };
+        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2.5, ...protocolStyles[protocol], pointRadius: (context) => context.dataIndex % 150 === 0 ? 3 : 0, pointHoverRadius: 5, pointHitRadius: 8, stepped: true, spanGaps: false };
       }),
     },
     options: chartOptions("Node hidup"),
@@ -321,8 +322,6 @@ function renderValidation(rows) {
   $("#validationSeedCount").textContent = data[0]?.seed_count ?? validationRows.length ?? "—";
   $("#fuzzyCensoredCount").textContent = numberFormat.format(censorCount(validationRows, "FUZZY"));
   $("#gwoCensoredCount").textContent = numberFormat.format(censorCount(validationRows, "GWO"));
-  $("#validationSeedDataDetails").dataset.loaded = "false";
-  $("#validationSeedDataTable").innerHTML = "";
   const metricLabels = {
     FND: '<abbr title="Ronde saat node pertama mati">FND</abbr>',
     HND: '<abbr title="Ronde saat setidaknya separuh node mati">HND</abbr>',
@@ -346,7 +345,9 @@ function renderValidation(rows) {
   ], metrics);
   renderValidationConclusion(metrics);
   renderValidationChart(data);
-  renderValidationSeedsChart(validationRows, $("#validationMetricSelect").value);
+  const selectedMetric = $("#validationMetricSelect").value;
+  renderValidationSeedsChart(validationRows, selectedMetric);
+  renderValidationSeedTable(validationRows, selectedMetric);
 }
 
 function renderValidationConclusion(rows) {
@@ -394,26 +395,27 @@ function renderValidationChart(rows) {
 function renderValidationSeedsChart(rows, metric) {
   const horizon = finiteNumber(state.dashboard?.validation_horizon);
   const fields = { FUZZY: `FUZZY_${metric}`, GWO: `GWO_${metric}` };
-  const hasRows = rows.length > 0 && rows.some((row) => finiteNumber(row.seed) !== null
-    && Object.values(fields).some((field) => finiteNumber(row[field]) !== null || (metric !== "PDR_pct" && horizon !== null)));
+  const seedRows = [...rows].filter((row) => finiteNumber(row.seed) !== null).sort((a, b) => a.seed - b.seed);
+  const hasRows = seedRows.some((row) => Object.values(fields).some((field) => finiteNumber(row[field]) !== null || (metric !== "PDR_pct" && horizon !== null)));
   toggleChartEmpty("validationSeedsChart", "validationSeedsEmpty", !hasRows);
   if (!hasRows) return;
   const datasets = Object.entries(fields).map(([protocol, field]) => ({
     label: protocol,
-    data: rows.map((row) => {
+    data: seedRows.map((row, index) => {
       const value = finiteNumber(row[field]);
       if (value === null && (metric === "PDR_pct" || horizon === null)) return null;
       return {
-        x: finiteNumber(row.seed),
+        x: index + (protocol === "FUZZY" ? -0.22 : 0.22),
         y: value ?? horizon,
+        seed: row.seed,
         censored: value === null,
       };
     }).filter(Boolean),
     borderColor: protocolColors[protocol],
     backgroundColor: protocolColors[protocol],
-    pointStyle: (context) => context.raw?.censored ? "triangle" : protocolStyles[protocol].pointStyle,
-    pointRadius: 5,
-    pointHoverRadius: 7,
+    pointStyle: protocolStyles[protocol].pointStyle,
+    pointRadius: (context) => context.raw?.censored ? 7 : 5,
+    pointHoverRadius: 8,
     showLine: false,
   }));
   const flatValues = datasets.flatMap((dataset) => dataset.data.map((point) => point.y));
@@ -421,7 +423,7 @@ function renderValidationSeedsChart(rows, metric) {
   const options = chartOptions(pdr ? "PDR (%)" : "Ronde");
   options.interaction = { mode: "nearest", intersect: true };
   options.plugins.tooltip.callbacks = {
-    title(items) { return `Seed ${formatInteger(items[0]?.raw?.x)}`; },
+    title(items) { return `Seed ${formatInteger(items[0]?.raw?.seed)}`; },
     label(context) {
       const point = context.raw;
       const value = point.censored ? `> ${formatInteger(horizon)} (belum tercapai)` : pdr ? formatPercent(point.y) : `${formatDecimal(point.y)} ronde`;
@@ -429,13 +431,19 @@ function renderValidationSeedsChart(rows, metric) {
     },
   };
   options.scales.x = {
-    type: "linear", title: { display: true, text: "Seed topologi", color: axisColor, font: { size: 13 } },
-    grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 13 } }, border: { display: false },
+    type: "linear", min: -0.5, max: seedRows.length - 0.5,
+    title: { display: true, text: "Seed topologi", color: axisColor, font: { size: 13 } },
+    grid: { display: false },
+    ticks: { color: axisColor, stepSize: 1, maxTicksLimit: seedRows.length, font: { size: 13 }, callback(value) { return seedRows[Math.round(value)]?.seed ?? ""; } },
+    border: { display: false },
   };
+  const yMin = Math.min(...flatValues);
+  const yMax = Math.max(...flatValues);
   options.scales.y = {
     ...options.scales.y,
-    beginAtZero: !pdr,
-    ...(pdr ? { min: Math.floor(Math.min(...flatValues) * 10) / 10 - 0.1, max: Math.ceil(Math.max(...flatValues) * 10) / 10 + 0.1 } : {}),
+    beginAtZero: false,
+    min: pdr ? Math.floor(yMin * 10) / 10 - 0.1 : Math.max(0, Math.floor(yMin / 100) * 100 - 50),
+    max: pdr ? Math.ceil(yMax * 10) / 10 + 0.1 : Math.ceil(yMax / 100) * 100 + 50,
   };
   replaceChart("validationSeeds", "validationSeedsChart", { type: "scatter", data: { datasets }, options });
 }
@@ -445,15 +453,15 @@ function renderValidationSeedTable(rows, metric) {
   const label = metric === "PDR_pct" ? "PDR" : metric;
   const formatSeedValue = (value) => {
     const number = finiteNumber(value);
-    if (number !== null) return metric === "PDR_pct" ? formatPercent(number) : formatDecimal(number);
+    if (number !== null) return metric === "PDR_pct" ? formatPercent(number) : formatInteger(number);
     return metric === "PDR_pct" ? "—" : `> ${formatInteger(horizon)} (belum tercapai)`;
   };
+  $("#validationSeedTableTitle").textContent = `Nilai tiap seed · ${label}`;
   $("#validationSeedDataTable").innerHTML = makeTable([
     { key: "seed", label: "Seed topologi", markup: '<abbr title="Angka awal acak untuk mengulang susunan node">Seed topologi</abbr>' },
     { key: `FUZZY_${metric}`, label: `FUZZY · ${label}`, render: formatSeedValue },
     { key: `GWO_${metric}`, label: `GWO · ${label}`, render: formatSeedValue },
-  ], rows);
-  $("#validationSeedDataDetails").dataset.loaded = "true";
+  ], [...rows].sort((a, b) => a.seed - b.seed));
 }
 
 function membershipDegree(shape, points, x) {
@@ -492,7 +500,7 @@ function renderMembershipCharts(membership, baseline, ranges) {
     const functions = membership[definition.key] || {};
     const initialFunctions = baseline[definition.key] || {};
     const models = definition.key === "output"
-      ? [{ name: "Mamdani (tetap)", functions: initialFunctions, dash: [6, 4] }]
+      ? [{ name: "Mamdani awal (tetap)", functions: initialFunctions, dash: [6, 4] }]
       : [
         { name: "Mamdani awal", functions: initialFunctions, dash: [6, 4] },
         { name: "GWO", functions, dash: [] },
@@ -503,19 +511,20 @@ function renderMembershipCharts(membership, baseline, ranges) {
       data: {
         labels: values.map((value) => Number(value.toFixed(2))),
         datasets: models.flatMap((model) => labels.filter((label) => model.functions[label]).map((label, index) => {
-          const color = membershipColors[labels.indexOf(label) % membershipColors.length];
+          const palette = model.name.startsWith("GWO") ? membershipOptimizedColors : membershipInitialColors;
+          const color = palette[labels.indexOf(label) % palette.length];
           const spec = model.functions[label];
           return {
             label: `${model.name} · ${label}`,
             data: values.map((value) => membershipDegree(spec.shape, spec.points, value)),
-            borderColor: color, backgroundColor: color, borderWidth: model.name === "GWO" ? 2.5 : 2,
+            borderColor: color, backgroundColor: color, borderWidth: model.name.startsWith("GWO") ? 2.5 : 2,
             borderDash: model.dash, pointRadius: 0, tension: 0,
           };
         })),
       },
       options: {
         ...chartOptions("Derajat keanggotaan"),
-        plugins: { ...chartOptions("").plugins, legend: { ...chartOptions("").plugins.legend, labels: { ...chartOptions("").plugins.legend.labels, padding: 11 } } },
+        plugins: { ...chartOptions("").plugins, legend: { ...chartOptions("").plugins.legend, labels: { ...chartOptions("").plugins.legend.labels, usePointStyle: false, boxWidth: 30, boxHeight: 2, padding: 11 } } },
         scales: {
           x: { ...chartOptions("").scales.x, ticks: { ...chartOptions("").scales.x.ticks, maxTicksLimit: 5 } },
           y: { ...chartOptions("").scales.y, min: 0, max: 1, ticks: { ...chartOptions("").scales.y.ticks, stepSize: 0.25 } },
@@ -535,7 +544,7 @@ function renderMembershipCharts(membership, baseline, ranges) {
       ...[membership[key], baseline[key]].flatMap((group) => Object.values(group || {}).flatMap((spec) => spec.points)),
     ])].sort((a, b) => a - b);
     const modelList = key === "output"
-      ? [{ name: "Mamdani (tetap)", functions: baseline[key] || {} }]
+      ? [{ name: "Mamdani awal (tetap)", functions: baseline[key] || {} }]
       : [{ name: "Mamdani awal", functions: baseline[key] || {} }, { name: "GWO", functions: membership[key] || {} }];
     const columns = modelList.flatMap((model) => Object.entries(model.functions).map(([label, spec]) => ({
       key: `${model.name}-${label}`,
@@ -622,7 +631,7 @@ function renderSimulationChart(rows) {
       labels: rounds,
       datasets: ["FUZZY", "LEACH", "GWO"].map((protocol) => {
         const values = new Map(rows.filter((row) => row.protocol === protocol).map((row) => [row.round_number, row.alive_nodes]));
-        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, ...protocolStyles[protocol], pointRadius: 0, pointHitRadius: 7, stepped: true, spanGaps: false };
+        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2.5, ...protocolStyles[protocol], pointRadius: (context) => context.dataIndex % 150 === 0 ? 3 : 0, pointHoverRadius: 5, pointHitRadius: 8, stepped: true, spanGaps: false };
       }),
     },
     options: chartOptions("Node hidup"),
@@ -701,13 +710,7 @@ function bindEvents() {
   });
   $("#validationMetricSelect").addEventListener("change", (event) => {
     renderValidationSeedsChart(state.dashboard?.validation_rows || [], event.target.value);
-    if ($("#validationSeedDataDetails").open) renderValidationSeedTable(state.dashboard?.validation_rows || [], event.target.value);
-  });
-  $("#validationSeedDataDetails").addEventListener("toggle", (event) => {
-    const details = event.currentTarget;
-    if (details.open && details.dataset.loaded !== "true") {
-      renderValidationSeedTable(state.dashboard?.validation_rows || [], $("#validationMetricSelect").value);
-    }
+    renderValidationSeedTable(state.dashboard?.validation_rows || [], event.target.value);
   });
   $("#historyDataDetails").addEventListener("toggle", (event) => {
     const details = event.currentTarget;

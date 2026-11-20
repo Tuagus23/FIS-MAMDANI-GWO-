@@ -207,13 +207,17 @@
                   <option value="FND">FND</option><option value="HND">HND</option><option value="LND">LND</option><option value="PDR_pct">PDR</option>
                 </select>
               </div>
-              <p class="panel-caption">Setiap titik mewakili satu seed topologi. Segitiga pada LND menandai node yang belum mati saat horizon tercapai.</p>
-              <div class="chart-frame chart-frame-medium"><canvas id="validationSeedsChart" role="img" aria-label="Sebaran metrik validasi per seed"></canvas></div>
-              <div id="validationSeedsEmpty" class="chart-empty hidden">Sebaran per seed belum tersedia.</div>
-              <details class="chart-data-details" id="validationSeedDataDetails" data-loaded="false">
-                <summary>Lihat tabel nilai tiap seed</summary>
-                <div id="validationSeedDataTable" class="table-wrap"></div>
-              </details>
+              <p class="panel-caption">Titik FUZZY dan GWO dipisahkan sedikit pada setiap seed agar nilainya mudah dibandingkan. Segitiga menandai milestone yang belum tercapai pada batas horizon.</p>
+              <div class="seed-analysis-grid">
+                <div>
+                  <div class="chart-frame chart-frame-seed"><canvas id="validationSeedsChart" role="img" aria-label="Sebaran metrik validasi per seed"></canvas></div>
+                  <div id="validationSeedsEmpty" class="chart-empty hidden">Sebaran per seed belum tersedia.</div>
+                </div>
+                <section class="seed-table-panel" aria-labelledby="validationSeedTableTitle">
+                  <h3 id="validationSeedTableTitle">Nilai tiap seed</h3>
+                  <div id="validationSeedDataTable" class="table-wrap"></div>
+                </section>
+              </div>
             </article>
             <article class="panel overflow-hidden">
               <div class="panel-heading"><div>
@@ -225,6 +229,10 @@
 
           <section id="view-membership" class="view-section hidden space-y-5" aria-labelledby="pageTitle">
             <div id="membershipEmpty" class="notice hidden" role="status">Parameter fungsi keanggotaan tidak ditemukan.</div>
+            <div class="membership-model-key" aria-label="Arti gaya garis pada grafik fungsi keanggotaan">
+              <span><i class="membership-key-line is-initial" aria-hidden="true"></i>Mamdani awal</span>
+              <span><i class="membership-key-line is-optimized" aria-hidden="true"></i>GWO hasil optimasi</span>
+            </div>
             <div id="membershipGrid" class="grid grid-cols-1 gap-5 lg:grid-cols-2"></div>
             <div class="info-strip"><span class="info-strip-mark" aria-hidden="true">i</span><p>Derajat 0 berarti tidak termasuk kategori, sedangkan 1 berarti sepenuhnya termasuk. Garis putus-putus menunjukkan kurva Mamdani awal dan garis solid menunjukkan hasil GWO. Kurva output tetap memakai Mamdani awal karena tidak dioptimalkan.</p></div>
             <button id="downloadMembership" class="button button-secondary" type="button">Unduh parameter MF (JSON)</button>

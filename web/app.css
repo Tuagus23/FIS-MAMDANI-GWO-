@@ -107,9 +107,11 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .chart-empty.hidden { display: none; }
 
 .table-wrap { max-width: 100%; overflow-x: auto; margin-top: 17px; }
-.data-table { width: 100%; min-width: 500px; border-collapse: collapse; color: #40534e; font-size: 13px; text-align: left; }
-.data-table th { border-bottom: 1px solid #e7ece8; padding: 10px 12px; color: #53665f; font-size: 13px; font-weight: 650; white-space: nowrap; }
+.data-table { width: 100%; min-width: 500px; border-collapse: collapse; color: #40534e; font-size: 14px; text-align: left; }
+.data-table th { border-bottom: 1px solid #e7ece8; padding: 11px 12px; color: #53665f; font-size: 14px; font-weight: 650; white-space: nowrap; }
 .data-table td { border-bottom: 1px solid #eef1ee; padding: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.data-table th:not(:first-child), .data-table td:not(:first-child) { text-align: right; }
+.data-table abbr[title] { cursor: help; text-decoration: none; }
 .data-table tr:last-child td { border-bottom: 0; }
 .data-table td:first-child { color: var(--ink); font-weight: 650; }
 .table-footnote { margin-top: 12px; color: #53665f; font-size: 13px; line-height: 1.5; }
@@ -278,12 +280,29 @@ canvas { max-width: 100%; }
 .metric-glossary { border: 1px solid #dce5df; border-radius: 10px; padding: 14px 16px; background: #fff; }
 .metric-glossary .metric-guide { margin-top: 8px; }
 .validation-metric-select { max-width: 145px; }
+.seed-analysis-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, .85fr); align-items: start; gap: 18px; margin-top: 16px; }
+.chart-frame-seed { height: 310px; margin-top: 0; }
+.seed-table-panel { min-width: 0; border: 1px solid #e2e9e3; border-radius: 10px; padding: 14px; background: #f8faf8; }
+.seed-table-panel h3 { color: #193832; font-size: 14px; font-weight: 650; }
+.seed-table-panel .table-wrap { margin-top: 8px; }
+.seed-table-panel .data-table { min-width: 0; font-size: 13px; }
+.seed-table-panel .data-table th { padding: 8px 6px; font-size: 13px; white-space: normal; }
+.seed-table-panel .data-table td { padding: 8px 6px; white-space: normal; overflow-wrap: anywhere; }
+.membership-model-key { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin: 0 0 2px; color: #40534e; font-size: 14px; }
+.membership-model-key span { display: inline-flex; align-items: center; gap: 9px; }
+.membership-key-line { display: inline-block; width: 30px; border-top: 3px solid #147591; }
+.membership-key-line.is-initial { border-top-style: dashed; border-top-color: #59656f; }
+.membership-key-line.is-optimized { height: 3px; border: 0; background: linear-gradient(90deg, #136f85, #7040a0, #347844); }
+abbr[title] { text-decoration: none; }
 .auth-gate.hidden { display: none; }
 .chart-data-details .table-wrap, .metric-glossary .metric-guide { max-height: 360px; overflow: auto; }
 @media (max-width: 639px) {
   .metric-card + .metric-card { border-left: 0; }
   .metric-card:nth-child(even) { border-left: 1px solid #d6dfd9; }
   .metric-card:nth-child(n+3) { border-top: 1px solid #d6dfd9; }
+}
+@media (max-width: 1023px) {
+  .seed-analysis-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Individual account login */
