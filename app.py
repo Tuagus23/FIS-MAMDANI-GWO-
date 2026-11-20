@@ -82,6 +82,66 @@ def read_json(path: Path) -> dict | None:
         return json.load(file)
 
 
+def _validation_counts(rows: list[dict], metric: str, horizon: int) -> tuple[int, int, int]:
+    """Count seed wins after treating unobserved milestones as horizon-censored."""
+    fuzzy_wins = gwo_wins = ties = 0
+    for row in rows:
+        if metric == "lifetime_index":
+            def lifetime(protocol: str) -> float:
+                milestones = [
+                    row.get(f"{protocol}_{name}")
+                    for name in ("FND", "HND", "LND")
+                ]
+                return sum(horizon if value is None else value for value in milestones) / (3 * horizon)
+
+            fuzzy = lifetime("FUZZY")
+            gwo = lifetime("GWO")
+        else:
+            fuzzy = row.get(f"FUZZY_{metric}")
+            gwo = row.get(f"GWO_{metric}")
+            fuzzy = horizon if fuzzy is None and metric in {"FND", "HND", "LND"} else fuzzy
+            gwo = horizon if gwo is None and metric in {"FND", "HND", "LND"} else gwo
+        if fuzzy is None or gwo is None:
+            continue
+        if fuzzy == gwo:
+            ties += 1
+        else:
+            fuzzy_wins += fuzzy > gwo
+            gwo_wins += gwo > fuzzy
+    return int(gwo_wins), int(fuzzy_wins), ties
+
+
+def _membership_ranges(membership: dict, baseline: dict, nodes: int) -> dict:
+    """Cover both physical inputs and every membership support point."""
+    def support_max(*sets: dict) -> float:
+        points = [
+            point
+            for group in sets
+            for spec in group.values()
+            for point in spec.get("points", [])
+        ]
+        return max(points, default=0.0)
+
+    config = SimulationConfig()
+    farthest_distance = max(
+        (x - config.sink_x_m) ** 2 + (y - config.sink_y_m) ** 2
+        for x in (0, config.width_m)
+        for y in (0, config.height_m)
+    ) ** 0.5
+    return {
+        "energy": {"min": 0, "max": 1},
+        "distance": {
+            "min": 0,
+            "max": max(farthest_distance, support_max(membership.get("distance", {}), baseline.get("distance", {}))),
+        },
+        "neighbors": {
+            "min": 0,
+            "max": max(nodes - 1, support_max(membership.get("neighbors", {}), baseline.get("neighbors", {}))),
+        },
+        "output": {"min": 0, "max": 1},
+    }
+
+
 def dashboard_data(dataset_id: str) -> dict:
     dataset = DATASETS[dataset_id]
     folder = next(
@@ -89,15 +149,29 @@ def dashboard_data(dataset_id: str) -> dict:
         dataset.get("paths", [dataset.get("path")])[0],
     )
     history = read_csv_rows(folder / "round_metrics.csv")
+    summary = read_csv_rows(folder / "protocol_summary.csv")
+    validation = read_csv_rows(folder / "validation_summary.csv")
+    validation_rows = read_csv_rows(folder / "validation.csv")
+    horizon = int(dataset.get("validation_horizon", SimulationConfig().rounds))
+    for row in validation:
+        if validation_rows and row.get("metric") in {"FND", "HND", "LND", "PDR_pct", "lifetime_index"}:
+            row["GWO_wins"], row["FUZZY_wins"], row["ties"] = _validation_counts(
+                validation_rows, row["metric"], horizon
+            )
+    membership = read_json(folder / "membership_gwo.json") or read_json(GWO_MODEL)
+    membership = membership or {}
+    baseline = MembershipSet.default().to_dict()
     return {
         "dataset": {
             "id": dataset_id,
             "label": dataset["label"],
             "description": dataset["description"],
         },
-        "summary": read_csv_rows(folder / "protocol_summary.csv"),
-        "validation": read_csv_rows(folder / "validation_summary.csv"),
-        "validation_rows": read_csv_rows(folder / "validation.csv"),
+        "summary": summary,
+        "validation": validation,
+        "validation_rows": validation_rows,
+        "validation_horizon": horizon,
+        "horizon": int(dataset.get("horizon", SimulationConfig().rounds)),
         "history": [
             {
                 "protocol": row.get("protocol"),
@@ -106,8 +180,9 @@ def dashboard_data(dataset_id: str) -> dict:
             }
             for row in history
         ],
-        "membership": read_json(folder / "membership_gwo.json")
-        or read_json(GWO_MODEL),
+        "membership": membership,
+        "membership_baseline": baseline,
+        "membership_ranges": _membership_ranges(membership, baseline, SimulationConfig().nodes),
     }
 
 

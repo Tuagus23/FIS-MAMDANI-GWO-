@@ -4,9 +4,9 @@ const inviteType = new URLSearchParams(window.location.hash.slice(1)).get("type"
 
 const viewText = {
   hasil: {
-    title: "Dashboard eksperimen",
+    title: "Ringkasan",
     description: "Bandingkan umur jaringan dan keberhasilan pengiriman tiga protokol.",
-    breadcrumb: "Dashboard",
+    breadcrumb: "Ringkasan",
   },
   validasi: {
     title: "Validasi model",
@@ -25,7 +25,13 @@ const viewText = {
   },
 };
 
-const protocolColors = { FUZZY: "#24675c", LEACH: "#53778c", GWO: "#a95f30" };
+const protocolColors = { FUZZY: "#00765e", LEACH: "#3568a8", GWO: "#b34d16" };
+const protocolStyles = {
+  FUZZY: { borderDash: [], pointStyle: "circle" },
+  LEACH: { borderDash: [7, 4], pointStyle: "rect" },
+  GWO: { borderDash: [8, 3, 2, 3], pointStyle: "triangle" },
+};
+const membershipColors = ["#2d7185", "#76589b", "#4e7b4f"];
 const axisColor = "#53665f";
 const gridColor = "#e4eae5";
 const numberFormat = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 });
@@ -57,6 +63,30 @@ async function authenticatedFetch(url, options = {}) {
   return response;
 }
 
+async function readApiResponse(response, fallbackMessage) {
+  const contentType = response.headers.get("content-type") || "";
+  const body = await response.text();
+  let data = null;
+  if (contentType.includes("json")) {
+    try { data = JSON.parse(body); } catch { data = null; }
+  }
+  if (!response.ok) {
+    if (response.status === 413) throw new Error("Permintaan terlalu besar untuk diproses. Kurangi ukuran skenario lalu coba lagi.");
+    if ([502, 503, 504].includes(response.status)) throw new Error("Server terlalu lama merespons atau sedang sibuk. Tunggu sebentar, lalu coba lagi.");
+    throw new Error(data?.error || fallbackMessage);
+  }
+  if (!contentType.includes("json") || !data || typeof data !== "object") {
+    throw new Error("Server mengirim respons yang tidak dapat dibaca. Muat ulang halaman dan coba lagi.");
+  }
+  return data;
+}
+
+function requestErrorMessage(error, fallback) {
+  if (error?.name === "AbortError") return "Permintaan ke server melewati batas waktu. Coba lagi sebentar.";
+  if (error instanceof TypeError) return "Server tidak dapat dihubungi. Periksa koneksi lalu coba lagi.";
+  return error?.message || fallback;
+}
+
 function setConnectionStatus(message, connected = true) {
   const status = $("#connectionState");
   $("#connectionText").textContent = message;
@@ -69,20 +99,47 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function finiteNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 function formatInteger(value) {
-  return value === null || value === undefined ? "Belum tercapai" : numberFormat.format(value);
+  const number = finiteNumber(value);
+  return number === null ? "—" : numberFormat.format(number);
 }
 
 function formatPercent(value) {
-  return value === null || value === undefined ? "—" : `${decimalFormat.format(value)}%`;
+  const number = finiteNumber(value);
+  return number === null ? "—" : `${decimalFormat.format(number)}%`;
 }
 
 function formatDecimal(value) {
-  return value === null || value === undefined ? "—" : decimalFormat.format(value);
+  const number = finiteNumber(value);
+  return number === null ? "—" : decimalFormat.format(number);
 }
 
-function setView(view) {
+function formatMilestone(value, row, horizon = state.dashboard?.horizon) {
+  const number = finiteNumber(value);
+  if (number !== null) return formatInteger(number);
+  return horizon ? `> ${formatInteger(horizon)} (belum tercapai)` : "Tersensor";
+}
+
+function bestMetricRows(rows, key, censoredIsBest = false) {
+  const eligible = rows.filter((row) => finiteNumber(row[key]) !== null || (censoredIsBest && row[key] === null));
+  if (!eligible.length) return [];
+  const score = (row) => finiteNumber(row[key]) ?? (censoredIsBest && row[key] === null ? Infinity : -Infinity);
+  const bestScore = Math.max(...eligible.map(score));
+  return eligible.filter((row) => score(row) === bestScore);
+}
+
+function setView(view, { updateHash = false } = {}) {
   if (!viewText[view]) return;
+  if (updateHash && location.hash !== `#${view}`) {
+    location.hash = view;
+    return;
+  }
   state.view = view;
   $$(".view-section").forEach((section) => section.classList.toggle("hidden", section.id !== `view-${view}`));
   $$("[data-view]").forEach((button) => {
@@ -96,9 +153,10 @@ function setView(view) {
   $("#pageDescription").textContent = copy.description;
   $("#breadcrumb").innerHTML = `Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
   $("#downloadPrimary").classList.toggle("hidden", view !== "hasil");
+  window.scrollTo({ top: 0, behavior: "auto" });
   if (view === "hasil") setTimeout(() => renderLifetimeChart(state.dashboard?.summary || []), 0);
   if (view === "validasi") setTimeout(() => renderValidationChart(state.dashboard?.validation || []), 0);
-  if (view === "membership") setTimeout(() => renderMembershipCharts(state.dashboard?.membership), 0);
+  if (view === "membership") setTimeout(() => renderMembershipCharts(state.dashboard?.membership, state.dashboard?.membership_baseline, state.dashboard?.membership_ranges), 0);
   if (view === "simulasi" && state.simulation) setTimeout(() => renderSimulationChart(state.simulation.history), 0);
 }
 
@@ -114,15 +172,15 @@ function setLoading(isLoading) {
 
 function makeTable(headers, rows) {
   if (!rows.length) return '<p class="table-footnote">Tidak ada baris untuk ditampilkan.</p>';
-  const head = headers.map((header) => `<th scope="col">${escapeHtml(header.label)}</th>`).join("");
+  const head = headers.map((header) => `<th scope="col">${header.markup || escapeHtml(header.label)}</th>`).join("");
   const body = rows.map((row) => `<tr>${headers.map((header) => `<td>${header.render ? header.render(row[header.key], row) : escapeHtml(row[header.key])}</td>`).join("")}</tr>`).join("");
   return `<table class="data-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function protocolCell(value) {
   const name = String(value || "");
-  const color = name === "LEACH" ? "leach" : name === "GWO" ? "gwo" : "";
-  return `<span class="protocol-name"><span class="protocol-dot ${color}" aria-hidden="true"></span>${escapeHtml(name)}</span>`;
+  const color = name.toLowerCase();
+  return `<span class="protocol-name"><span class="protocol-symbol ${color}" aria-hidden="true"></span>${escapeHtml(name)}</span>`;
 }
 
 function chartOptions(yLabel, legend = true) {
@@ -134,13 +192,13 @@ function chartOptions(yLabel, legend = true) {
       legend: {
         display: legend,
         position: "bottom",
-        labels: { color: "#53665f", boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: "circle", padding: 16, font: { size: 12 } },
+        labels: { color: "#53665f", boxWidth: 10, boxHeight: 10, usePointStyle: true, padding: 16, font: { size: 13 } },
       },
-      tooltip: { backgroundColor: "#193832", padding: 10, titleFont: { size: 12 }, bodyFont: { size: 12 }, displayColors: true },
+      tooltip: { backgroundColor: "#193832", padding: 10, titleFont: { size: 13 }, bodyFont: { size: 13 }, displayColors: true },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 12 } }, border: { display: false } },
-      y: { beginAtZero: true, title: { display: Boolean(yLabel), text: yLabel, color: axisColor, font: { size: 12, weight: "normal" } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { size: 12 } }, border: { display: false } },
+      x: { grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 13 } }, border: { display: false } },
+      y: { beginAtZero: true, title: { display: Boolean(yLabel), text: yLabel, color: axisColor, font: { size: 13, weight: "normal" } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { size: 13 } }, border: { display: false } },
     },
   };
 }
@@ -166,24 +224,28 @@ function renderSummary(data) {
   $("#summaryMetrics").classList.toggle("hidden", empty);
   $("#summaryTable").innerHTML = makeTable([
     { key: "protocol", label: "Protokol", render: protocolCell },
-    { key: "fnd", label: "FND", render: formatInteger },
-    { key: "hnd", label: "HND", render: formatInteger },
-    { key: "lnd", label: "LND", render: formatInteger },
-    { key: "pdr_total_pct", label: "PDR", render: formatPercent },
-    { key: "last_round", label: "Ronde akhir", render: formatInteger },
+    { key: "fnd", label: "FND", markup: '<abbr title="Ronde saat node pertama mati; lebih besar berarti lebih baik">FND</abbr>', render: (value, row) => formatMilestone(value, row) },
+    { key: "hnd", label: "HND", markup: '<abbr title="Ronde saat setidaknya separuh node mati">HND</abbr>', render: (value, row) => formatMilestone(value, row) },
+    { key: "lnd", label: "LND", markup: '<abbr title="Ronde saat node terakhir mati; jika belum tercapai ditampilkan sebagai batas bawah">LND</abbr>', render: (value, row) => formatMilestone(value, row) },
+    { key: "pdr_total_pct", label: "PDR", markup: '<abbr title="Rasio paket data yang berhasil diterima base station">PDR</abbr>', render: formatPercent },
+    { key: "last_round", label: "Ronde akhir", markup: '<abbr title="Ronde simulasi terakhir yang tercatat">Ronde akhir</abbr>', render: formatInteger },
   ], rows);
 
   if (!empty) {
-    const pdrs = rows.map((row) => Number(row.pdr_total_pct)).filter(Number.isFinite);
-    const fnds = rows.map((row) => Number(row.fnd)).filter(Number.isFinite);
-    const lnds = rows.map((row) => Number(row.lnd)).filter(Number.isFinite);
+    const bestLnd = bestMetricRows(rows, "lnd", true);
+    const bestPdr = bestMetricRows(rows, "pdr_total_pct");
+    const bestFnd = bestMetricRows(rows, "fnd", true);
+    const bestHnd = bestMetricRows(rows, "hnd", true);
+    const bestSummary = (bestRows, key, label) => bestRows.length
+      ? { label, value: escapeHtml(bestRows.map((row) => row.protocol).join(" + ")), sub: key === "pdr_total_pct" ? `${formatPercent(bestRows[0][key])} · PDR` : `${formatMilestone(bestRows[0][key], bestRows[0])} ronde · ${key.toUpperCase()}` }
+      : { label, value: "—", sub: "Belum tersedia" };
     const metrics = [
-      { label: "Rata-rata PDR", value: pdrs.length ? formatPercent(pdrs.reduce((a, b) => a + b, 0) / pdrs.length) : "—", sub: "pembacaan diterima", accent: "" },
-      { label: "FND tercepat", value: fnds.length ? formatInteger(Math.min(...fnds)) : "—", sub: "node pertama mati", accent: "orange" },
-      { label: "Umur terpanjang", value: lnds.length ? formatInteger(Math.max(...lnds)) : "—", sub: "node terakhir mati", accent: "blue" },
-      { label: "Protokol", value: numberFormat.format(rows.length), sub: "metode dibandingkan", accent: "ink" },
+      bestSummary(bestLnd, "lnd", "Umur terpanjang"),
+      bestSummary(bestPdr, "pdr_total_pct", "PDR tertinggi"),
+      bestSummary(bestFnd, "fnd", "FND tertinggi"),
+      bestSummary(bestHnd, "hnd", "HND tertinggi"),
     ];
-    $("#summaryMetrics").innerHTML = metrics.map((metric) => `<article class="metric-card"><p class="metric-label">${metric.label}</p><p class="metric-value">${metric.value}</p><p class="metric-sub">${metric.sub}</p><div class="metric-accent ${metric.accent}" aria-hidden="true"></div></article>`).join("");
+    $("#summaryMetrics").innerHTML = metrics.map((metric) => `<article class="metric-card"><p class="metric-label">${metric.label}</p><p class="metric-value">${metric.value}</p><p class="metric-sub">${metric.sub}</p></article>`).join("");
   }
 
   renderLifetimeChart(rows);
@@ -191,7 +253,8 @@ function renderSummary(data) {
 
 function renderLifetimeChart(rows) {
   const lifetimeRows = rows.filter((row) => ["FUZZY", "LEACH", "GWO"].includes(row.protocol));
-  const hasValues = lifetimeRows.some((row) => row.fnd !== null || row.hnd !== null || row.lnd !== null);
+  const horizon = finiteNumber(state.dashboard?.horizon);
+  const hasValues = lifetimeRows.some((row) => [row.fnd, row.hnd, row.lnd].some((value) => finiteNumber(value) !== null || (value === null && horizon !== null)));
   toggleChartEmpty("lifetimeChart", "lifetimeChartEmpty", !hasValues);
   if (!hasValues) return;
   const labels = ["FND", "HND", "LND"];
@@ -202,10 +265,18 @@ function renderLifetimeChart(rows) {
       labels,
       datasets: ["FUZZY", "LEACH", "GWO"].map((protocol) => {
         const row = lifetimeRows.find((item) => item.protocol === protocol);
-        return { label: protocol, data: fields.map((field) => row?.[field] ?? null), backgroundColor: protocolColors[protocol], borderRadius: 4, maxBarThickness: 28 };
+        return { label: protocol, data: fields.map((field) => finiteNumber(row?.[field]) ?? (row?.[field] === null ? horizon : null)), backgroundColor: protocolColors[protocol], borderRadius: 4, maxBarThickness: 28 };
       }),
     },
-    options: { ...chartOptions("Ronde"), scales: { ...chartOptions("Ronde").scales, y: { ...chartOptions("Ronde").scales.y, suggestedMax: Math.max(10, ...lifetimeRows.flatMap((row) => [row.fnd || 0, row.hnd || 0, row.lnd || 0])) * 1.12 } } },
+    options: {
+      ...chartOptions("Ronde"),
+      plugins: { ...chartOptions("Ronde").plugins, tooltip: { ...chartOptions("Ronde").plugins.tooltip, callbacks: { label(context) {
+        const row = lifetimeRows.find((item) => item.protocol === context.dataset.label);
+        const field = fields[context.dataIndex];
+        return row?.[field] === null ? `${context.dataset.label}: > ${formatInteger(horizon)} (belum mati)` : `${context.dataset.label}: ${formatInteger(context.parsed.y)} ronde`;
+      } } } },
+      scales: { ...chartOptions("Ronde").scales, y: { ...chartOptions("Ronde").scales.y, suggestedMax: Math.max(10, horizon || 0, ...lifetimeRows.flatMap((row) => [finiteNumber(row.fnd) || 0, finiteNumber(row.hnd) || 0, finiteNumber(row.lnd) || 0])) * 1.12 } },
+    },
   });
 }
 
@@ -222,28 +293,83 @@ function renderHistoryChart(rows) {
       labels: rounds,
       datasets: protocols.map((protocol) => {
         const values = new Map(history.filter((row) => row.protocol === protocol).map((row) => [row.round_number, row.alive_nodes]));
-        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, pointRadius: 0, pointHitRadius: 7, tension: 0.16, spanGaps: false };
+        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, ...protocolStyles[protocol], pointRadius: 0, pointHitRadius: 7, stepped: true, spanGaps: false };
       }),
     },
     options: chartOptions("Node hidup"),
   });
 }
 
+function censorCount(rows, protocol, metric = "LND") {
+  return (rows || []).filter((row) => row[`${protocol}_${metric}`] === null).length;
+}
+
+function formatValidationMean(value, row, protocol, validationRows) {
+  const formatted = row.metric === "PDR_pct" ? formatPercent(value) : formatDecimal(value);
+  const censored = row.metric === "lifetime_index"
+    ? ["FND", "HND", "LND"].some((metric) => censorCount(validationRows, protocol, metric) > 0)
+    : censorCount(validationRows, protocol, row.metric) > 0;
+  return `${formatted}${censored ? "*" : ""}`;
+}
+
 function renderValidation(rows) {
   const data = rows || [];
+  const validationRows = state.dashboard?.validation_rows || [];
   const metrics = data.filter((row) => ["FND", "HND", "LND", "PDR_pct", "lifetime_index"].includes(row.metric));
   const empty = data.length === 0;
-  $("#validationEmpty").classList.toggle("hidden", !empty);
-  $("#validationSeedCount").textContent = data[0]?.seed_count ?? "—";
+  $("#validationEmpty").classList.toggle("hidden", empty);
+  $("#validationSeedCount").textContent = data[0]?.seed_count ?? validationRows.length ?? "—";
+  $("#fuzzyCensoredCount").textContent = numberFormat.format(censorCount(validationRows, "FUZZY"));
+  $("#gwoCensoredCount").textContent = numberFormat.format(censorCount(validationRows, "GWO"));
+  $("#validationSeedDataDetails").dataset.loaded = "false";
+  $("#validationSeedDataTable").innerHTML = "";
+  const metricLabels = {
+    FND: '<abbr title="Ronde saat node pertama mati">FND</abbr>',
+    HND: '<abbr title="Ronde saat setidaknya separuh node mati">HND</abbr>',
+    LND: '<abbr title="Ronde saat node terakhir mati">LND</abbr>',
+    PDR_pct: '<abbr title="Rasio paket data yang berhasil diterima">PDR</abbr>',
+    lifetime_index: '<abbr title="Rata-rata FND, HND, dan LND dibagi tiga kali horizon">Indeks umur</abbr>',
+  };
   $("#validationTable").innerHTML = makeTable([
-    { key: "metric", label: "Metrik", render: (value) => escapeHtml(({ PDR_pct: "PDR", lifetime_index: "Indeks umur" })[value] || value) },
-    { key: "FUZZY_mean", label: "FUZZY", render: (value, row) => row.metric === "PDR_pct" ? formatPercent(value) : formatDecimal(value) },
-    { key: "GWO_mean", label: "GWO", render: (value, row) => row.metric === "PDR_pct" ? formatPercent(value) : formatDecimal(value) },
-    { key: "mean_delta_GWO_minus_FUZZY", label: "Selisih GWO − FUZZY", render: (value) => value === null || value === undefined ? "—" : `${Number(value) > 0 ? "+" : ""}${formatDecimal(value)}` },
-    { key: "GWO_wins", label: "Seed dimenangi GWO", render: formatInteger },
-    { key: "FUZZY_wins", label: "Seed dimenangi FUZZY", render: formatInteger },
+    { key: "metric", label: "Metrik", markup: "Metrik", render: (value) => metricLabels[value] || escapeHtml(value) },
+    { key: "FUZZY_mean", label: "FUZZY", render: (value, row) => formatValidationMean(value, row, "FUZZY", validationRows) },
+    { key: "GWO_mean", label: "GWO", render: (value, row) => formatValidationMean(value, row, "GWO", validationRows) },
+    { key: "mean_delta_GWO_minus_FUZZY", label: "Δ GWO", markup: '<abbr title="Selisih rata-rata GWO dikurangi FUZZY">Δ GWO</abbr>', render: (value, row) => {
+      const number = finiteNumber(value);
+      if (number === null) return "—";
+      const suffix = row.metric === "PDR_pct" ? " pp" : "";
+      return `${number > 0 ? "+" : ""}${formatDecimal(number)}${suffix}`;
+    } },
+    { key: "GWO_wins", label: "Menang GWO", markup: '<abbr title="Jumlah seed yang nilai metriknya lebih baik menurut aturan pada ringkasan validasi">Menang GWO</abbr>', render: formatInteger },
+    { key: "FUZZY_wins", label: "Menang FUZZY", markup: '<abbr title="Jumlah seed yang nilai metriknya lebih baik menurut aturan pada ringkasan validasi">Menang FUZZY</abbr>', render: formatInteger },
+    { key: "ties", label: "Seri", render: formatInteger },
   ], metrics);
+  renderValidationConclusion(metrics);
   renderValidationChart(data);
+  renderValidationSeedsChart(validationRows, $("#validationMetricSelect").value);
+}
+
+function renderValidationConclusion(rows) {
+  const byMetric = Object.fromEntries(rows.map((row) => [row.metric, row]));
+  const total = finiteNumber(rows[0]?.seed_count) || state.dashboard?.validation_rows?.length || 0;
+  const winners = { GWO: [], FUZZY: [], seimbang: [] };
+  for (const [metric, name] of [["FND", "FND"], ["HND", "HND"], ["LND", "LND"], ["PDR_pct", "PDR"]]) {
+    const row = byMetric[metric];
+    if (!row || !total) continue;
+    const gwo = finiteNumber(row.GWO_wins) || 0;
+    const fuzzy = finiteNumber(row.FUZZY_wins) || 0;
+    const ties = finiteNumber(row.ties) || 0;
+    const winner = gwo > fuzzy ? "GWO" : fuzzy > gwo ? "FUZZY" : "seimbang";
+    const count = Math.max(gwo, fuzzy);
+    winners[winner].push(`${name} (${numberFormat.format(count)}/${numberFormat.format(total)} seed${ties ? `, ${numberFormat.format(ties)} seri` : ""})`);
+  }
+  const parts = ["GWO", "FUZZY", "seimbang"].filter((winner) => winners[winner].length).map((winner) => {
+    const label = winner === "seimbang" ? "hasil seimbang pada" : `${winner} lebih unggul pada`;
+    return `${label} ${winners[winner].join(" dan ")}`;
+  });
+  $("#validationConclusion").textContent = parts.length
+    ? `${parts.join(", sedangkan ")}.`
+    : "Kesimpulan akan tampil setelah data validasi tersedia.";
 }
 
 function renderValidationChart(rows) {
@@ -257,12 +383,77 @@ function renderValidationChart(rows) {
     data: {
       labels: data.map((row) => row.metric),
       datasets: [
-        { label: "FUZZY", data: data.map((row) => row.FUZZY_mean), backgroundColor: protocolColors.FUZZY, borderRadius: 4, maxBarThickness: 28 },
-        { label: "GWO", data: data.map((row) => row.GWO_mean), backgroundColor: protocolColors.GWO, borderRadius: 4, maxBarThickness: 28 },
+        { label: "FUZZY", data: data.map((row) => row.FUZZY_mean), backgroundColor: protocolColors.FUZZY, borderRadius: 4, maxBarThickness: 28, ...protocolStyles.FUZZY },
+        { label: "GWO", data: data.map((row) => row.GWO_mean), backgroundColor: protocolColors.GWO, borderRadius: 4, maxBarThickness: 28, ...protocolStyles.GWO },
       ],
     },
     options,
   });
+}
+
+function renderValidationSeedsChart(rows, metric) {
+  const horizon = finiteNumber(state.dashboard?.validation_horizon);
+  const fields = { FUZZY: `FUZZY_${metric}`, GWO: `GWO_${metric}` };
+  const hasRows = rows.length > 0 && rows.some((row) => finiteNumber(row.seed) !== null
+    && Object.values(fields).some((field) => finiteNumber(row[field]) !== null || (metric !== "PDR_pct" && horizon !== null)));
+  toggleChartEmpty("validationSeedsChart", "validationSeedsEmpty", !hasRows);
+  if (!hasRows) return;
+  const datasets = Object.entries(fields).map(([protocol, field]) => ({
+    label: protocol,
+    data: rows.map((row) => {
+      const value = finiteNumber(row[field]);
+      if (value === null && (metric === "PDR_pct" || horizon === null)) return null;
+      return {
+        x: finiteNumber(row.seed),
+        y: value ?? horizon,
+        censored: value === null,
+      };
+    }).filter(Boolean),
+    borderColor: protocolColors[protocol],
+    backgroundColor: protocolColors[protocol],
+    pointStyle: (context) => context.raw?.censored ? "triangle" : protocolStyles[protocol].pointStyle,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+    showLine: false,
+  }));
+  const flatValues = datasets.flatMap((dataset) => dataset.data.map((point) => point.y));
+  const pdr = metric === "PDR_pct";
+  const options = chartOptions(pdr ? "PDR (%)" : "Ronde");
+  options.interaction = { mode: "nearest", intersect: true };
+  options.plugins.tooltip.callbacks = {
+    title(items) { return `Seed ${formatInteger(items[0]?.raw?.x)}`; },
+    label(context) {
+      const point = context.raw;
+      const value = point.censored ? `> ${formatInteger(horizon)} (belum tercapai)` : pdr ? formatPercent(point.y) : `${formatDecimal(point.y)} ronde`;
+      return `${context.dataset.label}: ${value}`;
+    },
+  };
+  options.scales.x = {
+    type: "linear", title: { display: true, text: "Seed topologi", color: axisColor, font: { size: 13 } },
+    grid: { display: false }, ticks: { color: axisColor, maxTicksLimit: 8, font: { size: 13 } }, border: { display: false },
+  };
+  options.scales.y = {
+    ...options.scales.y,
+    beginAtZero: !pdr,
+    ...(pdr ? { min: Math.floor(Math.min(...flatValues) * 10) / 10 - 0.1, max: Math.ceil(Math.max(...flatValues) * 10) / 10 + 0.1 } : {}),
+  };
+  replaceChart("validationSeeds", "validationSeedsChart", { type: "scatter", data: { datasets }, options });
+}
+
+function renderValidationSeedTable(rows, metric) {
+  const horizon = finiteNumber(state.dashboard?.validation_horizon);
+  const label = metric === "PDR_pct" ? "PDR" : metric;
+  const formatSeedValue = (value) => {
+    const number = finiteNumber(value);
+    if (number !== null) return metric === "PDR_pct" ? formatPercent(number) : formatDecimal(number);
+    return metric === "PDR_pct" ? "—" : `> ${formatInteger(horizon)} (belum tercapai)`;
+  };
+  $("#validationSeedDataTable").innerHTML = makeTable([
+    { key: "seed", label: "Seed topologi", markup: '<abbr title="Angka awal acak untuk mengulang susunan node">Seed topologi</abbr>' },
+    { key: `FUZZY_${metric}`, label: `FUZZY · ${label}`, render: formatSeedValue },
+    { key: `GWO_${metric}`, label: `GWO · ${label}`, render: formatSeedValue },
+  ], rows);
+  $("#validationSeedDataDetails").dataset.loaded = "true";
 }
 
 function membershipDegree(shape, points, x) {
@@ -278,31 +469,49 @@ function membershipDegree(shape, points, x) {
   return Math.max(0, Math.min(1, left, right));
 }
 
-function renderMembershipCharts(membership) {
+function renderMembershipCharts(membership, baseline, ranges) {
   const grid = $("#membershipGrid");
-  if (!membership) {
+  if (!membership || !baseline) {
     $("#membershipEmpty").classList.remove("hidden");
     grid.innerHTML = "";
     return;
   }
   $("#membershipEmpty").classList.add("hidden");
   const definitions = [
-    { key: "energy", title: "Energi sisa", unit: "rasio energi", min: 0, max: 1 },
-    { key: "distance", title: "Jarak ke base station", unit: "meter", min: 0, max: 100 },
-    { key: "neighbors", title: "Jumlah tetangga", unit: "node", min: 0, max: 20 },
-    { key: "output", title: "Skor kelayakan", unit: "skor Mamdani", min: 0, max: 1 },
+    { key: "energy", title: "Energi sisa", unit: "rasio energi" },
+    { key: "distance", title: "Jarak ke base station", unit: "meter" },
+    { key: "neighbors", title: "Jumlah tetangga", unit: "node" },
+    { key: "output", title: "Skor kelayakan", unit: "skor Mamdani" },
   ];
-  grid.innerHTML = definitions.map((item) => `<article class="membership-card"><h3>${item.title}</h3><p>${item.unit}</p><div class="membership-chart"><canvas id="mf-${item.key}" role="img" aria-label="Grafik fungsi keanggotaan ${item.title.toLowerCase()}"></canvas></div></article>`).join("");
-  const colors = ["#24675c", "#a95f30", "#53778c"];
+  grid.innerHTML = definitions.map((item) => `<article class="membership-card"><h3>${item.title}</h3><p>${item.unit}</p><div class="membership-chart"><canvas id="mf-${item.key}" role="img" aria-label="Grafik fungsi keanggotaan ${item.title.toLowerCase()}"></canvas></div><details class="chart-data-details" data-membership-details="${item.key}"><summary>Lihat tabel nilai kurva</summary><div class="table-wrap" data-membership-table="${item.key}"></div></details></article>`).join("");
   definitions.forEach((definition) => {
+    const axis = ranges?.[definition.key] || { min: 0, max: 1 };
+    const min = finiteNumber(axis.min) ?? 0;
+    const max = finiteNumber(axis.max) ?? 1;
+    const values = Array.from({ length: 121 }, (_, index) => min + (max - min) * index / 120);
     const functions = membership[definition.key] || {};
-    const values = Array.from({ length: 121 }, (_, index) => definition.min + (definition.max - definition.min) * index / 120);
-    const sets = Object.entries(functions);
+    const initialFunctions = baseline[definition.key] || {};
+    const models = definition.key === "output"
+      ? [{ name: "Mamdani (tetap)", functions: initialFunctions, dash: [6, 4] }]
+      : [
+        { name: "Mamdani awal", functions: initialFunctions, dash: [6, 4] },
+        { name: "GWO", functions, dash: [] },
+      ];
+    const labels = [...new Set(models.flatMap((model) => Object.keys(model.functions)))];
     replaceChart(`mf-${definition.key}`, `mf-${definition.key}`, {
       type: "line",
       data: {
         labels: values.map((value) => Number(value.toFixed(2))),
-        datasets: sets.map(([label, spec], index) => ({ label, data: values.map((value) => membershipDegree(spec.shape, spec.points, value)), borderColor: colors[index % colors.length], backgroundColor: colors[index % colors.length], borderWidth: 2, pointRadius: 0, tension: 0.12 })),
+        datasets: models.flatMap((model) => labels.filter((label) => model.functions[label]).map((label, index) => {
+          const color = membershipColors[labels.indexOf(label) % membershipColors.length];
+          const spec = model.functions[label];
+          return {
+            label: `${model.name} · ${label}`,
+            data: values.map((value) => membershipDegree(spec.shape, spec.points, value)),
+            borderColor: color, backgroundColor: color, borderWidth: model.name === "GWO" ? 2.5 : 2,
+            borderDash: model.dash, pointRadius: 0, tension: 0,
+          };
+        })),
       },
       options: {
         ...chartOptions("Derajat keanggotaan"),
@@ -314,6 +523,32 @@ function renderMembershipCharts(membership) {
       },
     });
   });
+  grid.querySelectorAll("[data-membership-details]").forEach((details) => details.addEventListener("toggle", () => {
+    if (!details.open || details.dataset.loaded) return;
+    const key = details.dataset.membershipDetails;
+    const definition = definitions.find((item) => item.key === key);
+    const axis = ranges?.[key] || { min: 0, max: 1 };
+    const min = finiteNumber(axis.min) ?? 0;
+    const max = finiteNumber(axis.max) ?? 1;
+    const values = [...new Set([
+      ...Array.from({ length: 21 }, (_, index) => min + (max - min) * index / 20),
+      ...[membership[key], baseline[key]].flatMap((group) => Object.values(group || {}).flatMap((spec) => spec.points)),
+    ])].sort((a, b) => a - b);
+    const modelList = key === "output"
+      ? [{ name: "Mamdani (tetap)", functions: baseline[key] || {} }]
+      : [{ name: "Mamdani awal", functions: baseline[key] || {} }, { name: "GWO", functions: membership[key] || {} }];
+    const columns = modelList.flatMap((model) => Object.entries(model.functions).map(([label, spec]) => ({
+      key: `${model.name}-${label}`,
+      label: `${model.name} · ${label}`,
+      render: (_, row) => formatDecimal(membershipDegree(spec.shape, spec.points, row.x)),
+    })));
+    const tableRows = values.map((x) => ({ x }));
+    $( `[data-membership-table="${key}"]`).innerHTML = makeTable([
+      { key: "x", label: definition.unit, render: formatDecimal },
+      ...columns,
+    ], tableRows);
+    details.dataset.loaded = "true";
+  }));
 }
 
 function updateDatasetDescription(dataset) {
@@ -326,17 +561,18 @@ async function loadDashboard(datasetId = state.datasetId) {
   setLoading(true);
   try {
     const response = await authenticatedFetch(`/api/dashboard?dataset=${encodeURIComponent(datasetId)}`, { headers: { Accept: "application/json" } });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Data eksperimen tidak dapat dimuat.");
+    const data = await readApiResponse(response, "Data eksperimen tidak dapat dimuat.");
     state.dashboard = data;
     updateDatasetDescription(data.dataset);
     renderSummary(data.summary);
     renderHistoryChart(data.history);
     renderValidation(data.validation);
-    renderMembershipCharts(data.membership);
+    renderMembershipCharts(data.membership, data.membership_baseline, data.membership_ranges);
+    $("#historyDataDetails").dataset.loaded = "false";
+    $("#historyDataTable").innerHTML = "";
   } catch (error) {
     setConnectionStatus("Data tidak tersedia", false);
-    setError(error.message || "Tidak dapat menghubungi server.");
+    setError(requestErrorMessage(error, "Data eksperimen tidak dapat dimuat."));
   } finally {
     setLoading(false);
   }
@@ -358,20 +594,22 @@ function renderSimulation(result) {
   $("#simulationPlaceholder").classList.add("hidden");
   $("#simulationResults").classList.remove("hidden");
   $("#simulationStatus").textContent = `${numberFormat.format(result.config.nodes)} node · ${numberFormat.format(result.config.rounds)} ronde`;
-  const bestLifetime = [...result.summary].sort((a, b) => (b.lnd || 0) - (a.lnd || 0))[0];
-  const avgPdr = result.summary.reduce((sum, row) => sum + Number(row.pdr_total_pct || 0), 0) / Math.max(result.summary.length, 1);
+  const bestLifetime = bestMetricRows(result.summary, "lnd", true);
+  const bestPdr = bestMetricRows(result.summary, "pdr_total_pct");
   $("#simulationMetrics").innerHTML = [
-    { label: "Umur terpanjang", value: formatInteger(bestLifetime?.lnd), hint: bestLifetime?.protocol || "—" },
-    { label: "Rata-rata PDR", value: formatPercent(avgPdr), hint: "tiga protokol" },
-    { label: "Seed", value: formatInteger(result.config.seed), hint: "topologi" },
+    { label: "Umur terpanjang", value: bestLifetime.length ? `${escapeHtml(bestLifetime.map((row) => row.protocol).join(" + "))} · ${formatMilestone(bestLifetime[0].lnd, bestLifetime[0], result.config.rounds)}` : "—", hint: "LND tertinggi" },
+    { label: "PDR tertinggi", value: bestPdr.length ? `${escapeHtml(bestPdr.map((row) => row.protocol).join(" + "))} · ${formatPercent(bestPdr[0].pdr_total_pct)}` : "—", hint: "paket diterima" },
+    { label: "Seed topologi", value: formatInteger(result.config.seed), hint: "dapat diulang" },
   ].map((metric) => `<div class="sim-metric"><span>${metric.label}</span><strong>${metric.value}</strong><span class="mt-1">${metric.hint}</span></div>`).join("");
   $("#simulationTable").innerHTML = makeTable([
     { key: "protocol", label: "Protokol", render: protocolCell },
-    { key: "fnd", label: "FND", render: formatInteger },
-    { key: "hnd", label: "HND", render: formatInteger },
-    { key: "lnd", label: "LND", render: formatInteger },
-    { key: "pdr_total_pct", label: "PDR", render: formatPercent },
+    { key: "fnd", label: "FND", markup: '<abbr title="Ronde saat node pertama mati">FND</abbr>', render: (value, row) => formatMilestone(value, row, result.config.rounds) },
+    { key: "hnd", label: "HND", markup: '<abbr title="Ronde saat setidaknya separuh node mati">HND</abbr>', render: (value, row) => formatMilestone(value, row, result.config.rounds) },
+    { key: "lnd", label: "LND", markup: '<abbr title="Ronde saat node terakhir mati">LND</abbr>', render: (value, row) => formatMilestone(value, row, result.config.rounds) },
+    { key: "pdr_total_pct", label: "PDR", markup: '<abbr title="Rasio paket data yang berhasil diterima">PDR</abbr>', render: formatPercent },
   ], result.summary);
+  $("#simulationDataDetails").dataset.loaded = "false";
+  $("#simulationDataTable").innerHTML = "";
   renderSimulationChart(result.history);
 }
 
@@ -384,11 +622,31 @@ function renderSimulationChart(rows) {
       labels: rounds,
       datasets: ["FUZZY", "LEACH", "GWO"].map((protocol) => {
         const values = new Map(rows.filter((row) => row.protocol === protocol).map((row) => [row.round_number, row.alive_nodes]));
-        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, pointRadius: 0, pointHitRadius: 7, tension: 0.16, spanGaps: false };
+        return { label: protocol, data: rounds.map((round) => values.has(round) ? values.get(round) : null), borderColor: protocolColors[protocol], backgroundColor: protocolColors[protocol], borderWidth: 2, ...protocolStyles[protocol], pointRadius: 0, pointHitRadius: 7, stepped: true, spanGaps: false };
       }),
     },
     options: chartOptions("Node hidup"),
   });
+}
+
+function renderSimulationTable(rows) {
+  const data = [...(rows || [])].sort((a, b) => a.round_number - b.round_number || String(a.protocol).localeCompare(String(b.protocol)));
+  $("#simulationDataTable").innerHTML = makeTable([
+    { key: "round_number", label: "Ronde" },
+    { key: "protocol", label: "Protokol", render: protocolCell },
+    { key: "alive_nodes", label: "Node hidup", render: formatInteger },
+  ], data);
+  $("#simulationDataDetails").dataset.loaded = "true";
+}
+
+function renderHistoryTable(rows) {
+  const data = [...(rows || [])].sort((a, b) => a.round_number - b.round_number || String(a.protocol).localeCompare(String(b.protocol)));
+  $("#historyDataTable").innerHTML = makeTable([
+    { key: "round_number", label: "Ronde" },
+    { key: "protocol", label: "Protokol", render: protocolCell },
+    { key: "alive_nodes", label: "Node hidup", render: formatInteger },
+  ], data);
+  $("#historyDataDetails").dataset.loaded = "true";
 }
 
 function toCsv(rows) {
@@ -424,7 +682,7 @@ function downloadMembership() {
 }
 
 function bindEvents() {
-  $$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+  $$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view, { updateHash: true })));
   $("#datasetSelect").addEventListener("change", (event) => loadDashboard(event.target.value));
   $("#logoutButton").addEventListener("click", async () => {
     $("#logoutButton").disabled = true;
@@ -437,8 +695,27 @@ function bindEvents() {
   $("#downloadSimulation").addEventListener("click", () => {
     downloadFile("round_metrics.csv", toCsv(state.simulation?.history || []), "text/csv;charset=utf-8");
   });
-  $("#nodesInput").addEventListener("input", (event) => {
-    $("#headsInput").max = Math.min(10, Number(event.target.value) || 10);
+  window.addEventListener("hashchange", () => {
+    const view = location.hash.slice(1);
+    setView(viewText[view] ? view : "hasil");
+  });
+  $("#validationMetricSelect").addEventListener("change", (event) => {
+    renderValidationSeedsChart(state.dashboard?.validation_rows || [], event.target.value);
+    if ($("#validationSeedDataDetails").open) renderValidationSeedTable(state.dashboard?.validation_rows || [], event.target.value);
+  });
+  $("#validationSeedDataDetails").addEventListener("toggle", (event) => {
+    const details = event.currentTarget;
+    if (details.open && details.dataset.loaded !== "true") {
+      renderValidationSeedTable(state.dashboard?.validation_rows || [], $("#validationMetricSelect").value);
+    }
+  });
+  $("#historyDataDetails").addEventListener("toggle", (event) => {
+    const details = event.currentTarget;
+    if (details.open && details.dataset.loaded !== "true") renderHistoryTable(state.dashboard?.history || []);
+  });
+  $("#simulationDataDetails").addEventListener("toggle", (event) => {
+    const details = event.currentTarget;
+    if (details.open && details.dataset.loaded !== "true") renderSimulationTable(state.simulation?.history || []);
   });
   $("#simulationForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -458,15 +735,14 @@ function bindEvents() {
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Simulasi tidak dapat dijalankan.");
+      const result = await readApiResponse(response, "Simulasi tidak dapat dijalankan.");
       renderSimulation(result);
       $("#simulationNotice").textContent = "Simulasi selesai. Anda dapat mengunduh metrik per ronde.";
       $("#simulationNotice").classList.remove("hidden");
       $("#simulationNotice").classList.add("notice-success");
       $("#simulationStatus").textContent = "selesai";
     } catch (error) {
-      $("#simulationNotice").textContent = error.message || "Simulasi gagal dijalankan.";
+      $("#simulationNotice").textContent = requestErrorMessage(error, "Simulasi gagal dijalankan.");
       $("#simulationNotice").classList.remove("hidden");
       $("#simulationNotice").classList.add("notice-error");
       $("#simulationStatus").textContent = "gagal";
@@ -486,39 +762,42 @@ async function start() {
     return;
   }
 
-  const { data: sessionData, error: sessionError } = await state.authClient.auth.getSession();
-  const session = sessionData?.session;
-  if (sessionError || !session) {
+  try {
+    const { data: sessionData, error: sessionError } = await state.authClient.auth.getSession();
+    const session = sessionData?.session;
+    if (sessionError || !session) {
+      if (inviteType === "invite") {
+        window.location.replace("/login.html?type=invite");
+        return;
+      }
+      redirectToLogin();
+      return;
+    }
     if (inviteType === "invite") {
       window.location.replace("/login.html?type=invite");
       return;
     }
-    redirectToLogin();
-    return;
-  }
-  if (inviteType === "invite") {
-    window.location.replace("/login.html?type=invite");
-    return;
-  }
 
-  $("#accountEmail").textContent = session.user.email || "Akun aktif";
-  $("#accountEmail").title = session.user.email || "Akun aktif";
-  bindEvents();
-
-  try {
+    $("#accountEmail").textContent = session.user.email || "Akun aktif";
+    $("#accountEmail").title = session.user.email || "Akun aktif";
     const response = await authenticatedFetch("/api/datasets", { headers: { Accept: "application/json" } });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Daftar dataset tidak dapat dimuat.");
+    const data = await readApiResponse(response, "Daftar dataset tidak dapat dimuat.");
     setConnectionStatus("Terhubung");
     state.datasets = data.datasets;
     state.datasetId = data.default || "results";
     $("#datasetSelect").innerHTML = state.datasets.map((dataset) => `<option value="${escapeHtml(dataset.id)}">${escapeHtml(dataset.label)}</option>`).join("");
     $("#datasetSelect").value = state.datasetId;
+    bindEvents();
+    const route = location.hash.slice(1);
+    const initialView = viewText[route] ? route : "hasil";
+    if (!viewText[route]) history.replaceState(null, "", `#${initialView}`);
+    $("#dashboardApp").classList.remove("hidden");
+    $("#authGate").classList.add("hidden");
+    setView(initialView);
     await loadDashboard(state.datasetId);
   } catch (error) {
-    setLoading(false);
-    setConnectionStatus("Gagal memuat", false);
-    setError(error.message || "Tidak dapat menghubungi server. Jalankan aplikasi dengan perintah python app.py.");
+    $("#authGateMessage").textContent = requestErrorMessage(error, "Akses dashboard belum dapat diperiksa.");
+    $("#authGateLogin").classList.remove("hidden");
   }
 }
 

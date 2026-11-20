@@ -18,7 +18,8 @@
   </head>
   <body class="min-h-screen bg-mist font-sans text-ink antialiased">
     <a class="skip-link" href="#mainContent">Lewati ke konten</a>
-    <div class="min-h-screen lg:flex">
+    <div id="authGate" class="auth-gate" role="status" aria-live="polite"><span id="authGateMessage">Memeriksa sesi dan izin akses…</span><a id="authGateLogin" class="hidden" href="/login.html">Masuk ke akun</a></div>
+    <div id="dashboardApp" class="hidden min-h-screen lg:flex">
       <aside class="sidebar hidden w-64 shrink-0 flex-col justify-between bg-ink px-5 py-6 text-white lg:flex">
         <div>
           <a class="brand flex items-center gap-3" href="#hasil" aria-label="Analisis Fuzzy CH WSN, beranda">
@@ -45,7 +46,7 @@
             <nav class="mt-3 space-y-1" aria-label="Navigasi utama">
               <button class="nav-link is-active" type="button" data-view="hasil" aria-current="page">
                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6" height="6" rx="1.3" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="2.5" width="6" height="4" rx="1.3" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="8.5" width="6" height="9" rx="1.3" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="10.5" width="6" height="7" rx="1.3" stroke="currentColor" stroke-width="1.5"/></svg>
-                <span>Ringkasan hasil</span>
+                <span>Ringkasan</span>
               </button>
               <button class="nav-link" type="button" data-view="validasi">
                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M10 2.5 16 5v4.2c0 3.8-2.4 6.6-6 8.3-3.6-1.7-6-4.5-6-8.3V5l6-2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m7.3 9.8 1.8 1.8 3.8-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -65,7 +66,7 @@
 
         <div class="sidebar-note">
           <span class="sidebar-note-mark" aria-hidden="true"></span>
-          <p class="text-sm font-medium">Tiga protokol, satu tampilan.</p>
+          <p class="text-sm font-medium">Eksperimen utama</p>
           <p class="mt-1 text-xs leading-5 text-white/55">FUZZY · LEACH · GWO</p>
         </div>
       </aside>
@@ -88,23 +89,23 @@
               </span>
               <span class="text-sm font-semibold">Fuzzy CH WSN</span>
             </a>
-            <p class="hidden text-sm font-medium text-slate-600 sm:block" id="breadcrumb">Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">Ringkasan hasil</span></p>
+            <p class="hidden text-sm font-medium text-slate-600 sm:block" id="breadcrumb">Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">Ringkasan</span></p>
             <div class="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
               <label class="sr-only" for="datasetSelect">Pilih dataset</label>
               <select id="datasetSelect" class="dataset-select" aria-label="Pilih dataset">
                 <option value="results">Memuat dataset…</option>
               </select>
-              <span class="connection-state" id="connectionState"><span class="connection-dot"></span><span class="hidden sm:inline" id="connectionText">Menghubungkan</span></span>
+              <span class="connection-state" id="connectionState" role="status" aria-live="polite" aria-atomic="true"><span class="connection-dot" aria-hidden="true"></span><span id="connectionText">Memeriksa koneksi</span></span>
               <span class="account-divider" aria-hidden="true"></span>
               <span class="account-email" id="accountEmail" aria-label="Akun aktif"></span>
               <button id="logoutButton" class="button button-quiet" type="button">Keluar</button>
             </div>
           </div>
           <nav class="mobile-nav mt-3 flex gap-1 overflow-x-auto lg:hidden" aria-label="Navigasi halaman">
-            <button class="mobile-nav-link is-active" type="button" data-view="hasil" aria-current="page">Hasil</button>
-            <button class="mobile-nav-link" type="button" data-view="validasi">Validasi</button>
-            <button class="mobile-nav-link" type="button" data-view="membership">Fungsi MF</button>
-            <button class="mobile-nav-link" type="button" data-view="simulasi">Simulasi</button>
+            <button class="mobile-nav-link is-active" type="button" data-view="hasil" aria-current="page">Ringkasan</button>
+            <button class="mobile-nav-link" type="button" data-view="validasi">Validasi model</button>
+            <button class="mobile-nav-link" type="button" data-view="membership">Fungsi keanggotaan</button>
+            <button class="mobile-nav-link" type="button" data-view="simulasi">Simulasi baru</button>
           </nav>
         </header>
 
@@ -114,7 +115,7 @@
 
           <div class="page-heading mb-7 sm:mb-9">
             <div>
-              <h1 id="pageTitle" class="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Dashboard eksperimen</h1>
+              <h1 id="pageTitle" class="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Ringkasan</h1>
               <p id="pageDescription" class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Membandingkan umur jaringan dan keberhasilan pengiriman paket pada setiap protokol.</p>
               <p id="datasetDescription" class="dataset-description mt-1 max-w-2xl text-sm leading-6 text-slate-500"></p>
             </div>
@@ -133,7 +134,7 @@
                   </div>
                   <span class="panel-unit">ronde</span>
                 </div>
-                <p class="panel-caption">FND menandai node pertama yang mati. HND dan LND menunjukkan titik separuh node dan seluruh node mati.</p>
+                <p class="panel-caption">FND menandai node pertama yang mati. HND dan LND menunjukkan titik separuh dan seluruh node mati. Jika milestone belum tercapai, grafik memakai batas horizon; tooltip menandainya dengan &gt;.</p>
                 <div class="chart-frame chart-frame-tall"><canvas id="lifetimeChart" role="img" aria-label="Grafik perbandingan ronde kematian node"></canvas></div>
                 <div id="lifetimeChartEmpty" class="chart-empty hidden">Belum ada data umur jaringan untuk ditampilkan.</div>
               </article>
@@ -148,6 +149,10 @@
                 <p class="panel-caption">Jumlah node aktif pada setiap ronde dari hasil eksperimen tersimpan.</p>
                 <div class="chart-frame chart-frame-tall"><canvas id="historyChart" role="img" aria-label="Grafik jumlah node hidup per ronde"></canvas></div>
                 <div id="historyChartEmpty" class="chart-empty hidden">Data per ronde belum tersedia untuk dataset ini.</div>
+                <details class="chart-data-details" id="historyDataDetails">
+                  <summary>Lihat tabel node hidup per ronde</summary>
+                  <div id="historyDataTable" class="table-wrap"></div>
+                </details>
               </article>
             </div>
 
@@ -159,57 +164,73 @@
                 <span class="panel-unit">hasil tersimpan</span>
               </div>
               <div id="summaryTable" class="table-wrap"></div>
-              <p class="table-footnote">PDR adalah persentase pembacaan sensor yang berhasil diterima base station.</p>
+              <p class="table-footnote">PDR menunjukkan persentase paket data yang berhasil diterima base station.</p>
             </article>
+            <details class="metric-glossary">
+              <summary>Glosarium metrik dan istilah</summary>
+              <dl class="metric-guide">
+                <div><dt>FND</dt><dd>Ronde saat node pertama kehabisan energi.</dd></div>
+                <div><dt>HND</dt><dd>Ronde saat setidaknya separuh node mati.</dd></div>
+                <div><dt>LND</dt><dd>Ronde saat node terakhir mati.</dd></div>
+                <div><dt>PDR</dt><dd>Persentase paket data yang sampai ke base station.</dd></div>
+                <div><dt>Indeks umur</dt><dd>Rata-rata FND, HND, dan LND yang dibagi tiga kali horizon; milestone tersensor memakai batas horizon.</dd></div>
+                <div><dt>Ronde akhir</dt><dd>Ronde simulasi terakhir yang tercatat pada data eksperimen.</dd></div>
+                <div><dt>MF</dt><dd>Fungsi keanggotaan yang memetakan nilai input ke derajat 0 sampai 1.</dd></div>
+                <div><dt>Seed topologi</dt><dd>Angka awal acak untuk membentuk susunan node yang dapat diulang.</dd></div>
+                <div><dt>Δ GWO</dt><dd>Selisih rata-rata GWO dikurangi rata-rata FUZZY; untuk PDR, selisih ditulis dalam poin persentase.</dd></div>
+              </dl>
+            </details>
           </section>
 
           <section id="view-validasi" class="view-section hidden space-y-5" aria-labelledby="pageTitle">
-            <div class="section-lead">
-              <div><h2 class="text-lg font-semibold tracking-tight">Perbandingan pada topologi validasi</h2><p class="mt-1 text-sm leading-6 text-slate-600">Nilai rata-rata FUZZY dan GWO pada seed yang tidak dipakai saat optimasi.</p></div>
-            </div>
             <div id="validationEmpty" class="notice hidden" role="status">Data validasi tidak tersedia pada dataset ini.</div>
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
               <article class="panel min-w-0">
                 <div class="panel-heading"><div>
                     <h2 class="panel-title">FUZZY dibanding GWO</h2></div><span class="panel-unit">rata-rata ronde</span></div>
-                <p class="panel-caption">Milestone yang belum tercapai dinilai pada batas horizon simulasi.</p>
+                <p class="panel-caption">Validasi ini membandingkan FUZZY dengan GWO; LEACH tidak termasuk. Milestone yang belum tercapai dinilai pada batas horizon.</p>
                 <div class="chart-frame chart-frame-tall"><canvas id="validationChart" role="img" aria-label="Grafik validasi FUZZY dan GWO"></canvas></div>
                 <div id="validationChartEmpty" class="chart-empty hidden">Metrik umur jaringan tidak tersedia.</div>
               </article>
               <article class="panel">
                 <div class="panel-heading"><div>
-                    <h2 class="panel-title">Apa arti hasilnya?</h2></div></div>
-                <dl class="metric-guide">
-                  <div><dt>FND</dt><dd>Ronde saat node pertama kehabisan energi.</dd></div>
-                  <div><dt>HND</dt><dd>Ronde saat setidaknya separuh node mati.</dd></div>
-                  <div><dt>LND</dt><dd>Ronde saat node terakhir mati.</dd></div>
-                  <div><dt>PDR</dt><dd>Persentase pembacaan yang sampai ke base station.</dd></div>
-                  <div><dt>Δ GWO</dt><dd>Selisih nilai rata-rata GWO terhadap FUZZY.</dd></div>
-                </dl>
+                    <h2 class="panel-title">Kesimpulan validasi</h2></div></div>
+                <p id="validationConclusion" class="validation-conclusion">Kesimpulan akan dihitung dari hasil per seed.</p>
+                <p class="panel-caption">Untuk hitungan kemenangan, nilai FND, HND, LND, PDR, dan indeks umur yang lebih besar dihitung lebih baik. Nilai milestone yang belum tercapai dibandingkan pada batas horizon.</p>
               </article>
             </div>
+            <article class="panel min-w-0">
+              <div class="panel-heading"><div>
+                  <h2 class="panel-title">Sebaran hasil setiap seed</h2></div>
+                <label class="sr-only" for="validationMetricSelect">Metrik sebaran</label>
+                <select id="validationMetricSelect" class="dataset-select validation-metric-select">
+                  <option value="FND">FND</option><option value="HND">HND</option><option value="LND">LND</option><option value="PDR_pct">PDR</option>
+                </select>
+              </div>
+              <p class="panel-caption">Setiap titik mewakili satu seed topologi. Segitiga pada LND menandai node yang belum mati saat horizon tercapai.</p>
+              <div class="chart-frame chart-frame-medium"><canvas id="validationSeedsChart" role="img" aria-label="Sebaran metrik validasi per seed"></canvas></div>
+              <div id="validationSeedsEmpty" class="chart-empty hidden">Sebaran per seed belum tersedia.</div>
+              <details class="chart-data-details" id="validationSeedDataDetails" data-loaded="false">
+                <summary>Lihat tabel nilai tiap seed</summary>
+                <div id="validationSeedDataTable" class="table-wrap"></div>
+              </details>
+            </article>
             <article class="panel overflow-hidden">
               <div class="panel-heading"><div>
                   <h2 class="panel-title">Nilai rata-rata dan jumlah kemenangan</h2></div><button id="downloadValidation" class="button button-secondary" type="button">Unduh validasi</button></div>
               <div id="validationTable" class="table-wrap"></div>
-              <p class="table-footnote">Jumlah seed pada dataset: <span id="validationSeedCount">—</span>.</p>
+              <p class="table-footnote">Jumlah seed pada dataset: <span id="validationSeedCount">—</span>. Nilai rata-rata bertanda * memakai batas horizon untuk milestone yang belum tercapai. LND belum tercapai: FUZZY <span id="fuzzyCensoredCount">0</span>, GWO <span id="gwoCensoredCount">0</span> seed.</p>
             </article>
           </section>
 
           <section id="view-membership" class="view-section hidden space-y-5" aria-labelledby="pageTitle">
-            <div class="section-lead">
-              <div><h2 class="text-lg font-semibold tracking-tight">Bagaimana sistem membaca kondisi node</h2><p class="mt-1 text-sm leading-6 text-slate-600">Kurva menunjukkan tingkat keanggotaan input untuk inferensi Mamdani.</p></div>
-            </div>
             <div id="membershipEmpty" class="notice hidden" role="status">Parameter fungsi keanggotaan tidak ditemukan.</div>
             <div id="membershipGrid" class="grid grid-cols-1 gap-5 lg:grid-cols-2"></div>
-            <div class="info-strip"><span class="info-strip-mark">i</span><p>Nilai 0 berarti tidak termasuk kategori tersebut. Nilai 1 berarti sepenuhnya termasuk. Kurva input GWO dioptimalkan, sedangkan kurva output dipertahankan dari model Mamdani.</p></div>
+            <div class="info-strip"><span class="info-strip-mark" aria-hidden="true">i</span><p>Derajat 0 berarti tidak termasuk kategori, sedangkan 1 berarti sepenuhnya termasuk. Garis putus-putus menunjukkan kurva Mamdani awal dan garis solid menunjukkan hasil GWO. Kurva output tetap memakai Mamdani awal karena tidak dioptimalkan.</p></div>
             <button id="downloadMembership" class="button button-secondary" type="button">Unduh parameter MF (JSON)</button>
           </section>
 
           <section id="view-simulasi" class="view-section hidden space-y-5" aria-labelledby="pageTitle">
-            <div class="section-lead">
-              <div><h2 class="text-lg font-semibold tracking-tight">Jalankan skenario pembanding</h2><p class="mt-1 text-sm leading-6 text-slate-600">Atur ukuran jaringan dan seed, lalu bandingkan FUZZY, LEACH, serta GWO.</p></div>
-            </div>
             <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
               <form id="simulationForm" class="panel space-y-5">
                 <div>
@@ -231,6 +252,10 @@
                 <div id="simulationResults" class="hidden space-y-5">
                   <div id="simulationMetrics" class="grid grid-cols-3 gap-2"></div>
                   <div class="chart-frame chart-frame-medium"><canvas id="simulationChart" role="img" aria-label="Grafik jumlah node hidup pada simulasi baru"></canvas></div>
+                  <details class="chart-data-details" id="simulationDataDetails" data-loaded="false">
+                    <summary>Lihat tabel node hidup per ronde</summary>
+                    <div id="simulationDataTable" class="table-wrap"></div>
+                  </details>
                   <div id="simulationTable" class="table-wrap"></div>
                   <button id="downloadSimulation" class="button button-secondary" type="button">Unduh metrik per ronde</button>
                 </div>
