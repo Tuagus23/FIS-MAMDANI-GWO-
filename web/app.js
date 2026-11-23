@@ -154,7 +154,9 @@ function setView(view, { updateHash = false } = {}) {
   $("#pageDescription").textContent = copy.description;
   $("#breadcrumb").innerHTML = `Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
   $("#downloadPrimary").classList.toggle("hidden", view !== "hasil");
-  window.scrollTo({ top: 0, behavior: "auto" });
+  window.dashboardMotion?.scrollToTop();
+  if (!window.dashboardMotion) window.scrollTo({ top: 0, behavior: "auto" });
+  window.dashboardMotion?.refresh();
   if (view === "hasil") setTimeout(() => renderLifetimeChart(state.dashboard?.summary || []), 0);
   if (view === "validasi") setTimeout(() => renderValidationChart(state.dashboard?.validation || []), 0);
   if (view === "membership") setTimeout(() => renderMembershipCharts(state.dashboard?.membership, state.dashboard?.membership_baseline, state.dashboard?.membership_ranges), 0);
@@ -250,6 +252,7 @@ function renderSummary(data) {
   }
 
   renderLifetimeChart(rows);
+  window.dashboardMotion?.refresh();
 }
 
 function renderLifetimeChart(rows) {
@@ -565,6 +568,7 @@ function renderMembershipCharts(membership, baseline, ranges) {
     ], tableRows);
     details.dataset.loaded = "true";
   }));
+  window.dashboardMotion?.refresh();
 }
 
 function updateDatasetDescription(dataset) {
@@ -627,6 +631,7 @@ function renderSimulation(result) {
   $("#simulationDataDetails").dataset.loaded = "false";
   $("#simulationDataTable").innerHTML = "";
   renderSimulationChart(result.history);
+  window.dashboardMotion?.refresh();
 }
 
 function renderSimulationChart(rows) {
@@ -808,6 +813,7 @@ async function start() {
     $("#authGate").classList.add("hidden");
     setView(initialView);
     await loadDashboard(state.datasetId);
+    window.dashboardMotion?.initialize();
   } catch (error) {
     $("#authGateMessage").textContent = requestErrorMessage(error, "Akses dashboard belum dapat diperiksa.");
     $("#authGateLogin").classList.remove("hidden");

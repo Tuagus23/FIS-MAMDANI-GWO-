@@ -12,7 +12,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; overflow-x: clip; }
+html { scroll-behavior: auto; overflow-x: clip; }
 body { margin: 0; }
 button, select, input { font: inherit; }
 button, select { cursor: pointer; }
@@ -305,6 +305,8 @@ canvas { max-width: 100%; }
 abbr[title] { text-decoration: none; }
 .auth-gate.hidden { display: none; }
 .chart-data-details .table-wrap, .metric-glossary .metric-guide { max-height: 360px; overflow: auto; }
+.motion-ready .motion-reveal { translate: 0 var(--motion-reveal-y, 0px); }
+.motion-ready :is(.panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric) { transform-origin: center; }
 @media (max-width: 639px) {
   .membership-comparison-grid { grid-template-columns: minmax(0, 1fr); }
   .metric-card + .metric-card { border-left: 0; }

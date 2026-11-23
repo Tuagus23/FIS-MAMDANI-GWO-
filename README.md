@@ -25,19 +25,26 @@ digunakan adalah NumPy dan Matplotlib.
 ## Dashboard web
 
 Antarmuka web memakai HTML, CSS, JavaScript, dan Tailwind CSS. Perhitungan simulasi
-tetap memakai mesin Python yang sama dengan CLI. Jalankan server lokal dengan:
+tetap memakai mesin Python yang sama dengan CLI. Bangun aset web, lalu jalankan
+server lokal:
 
+    npm install
+    npm run build
     py -m pip install -r requirements.txt
     py app.py
 
 Buka **http://localhost:8000**. Aplikasi produksi dikonfigurasi untuk Vercel:
 `vercel.json` menyajikan aset dari `web/` dan menjalankan API Python.
 
-Tailwind CSS sudah dikompilasi ke `web/tailwind.css`; Node.js hanya diperlukan
-jika Anda mengubah utility class dan ingin membangunnya ulang:
+Tailwind CSS dan bundle animasi dibuat sebelum deployment. Jalankan build setelah
+mengubah antarmuka:
 
     npm install
-    npm run build:css
+    npm run build
+
+GSAP ScrollTrigger menangani animasi saat bagian masuk ke viewport, Motion
+menangani hover kartu, dan Lenis menyelaraskan scroll halus dengan ScrollTrigger.
+Animasi dinonaktifkan saat perangkat meminta pengurangan gerak.
 
 ### Login dan akses rekan
 

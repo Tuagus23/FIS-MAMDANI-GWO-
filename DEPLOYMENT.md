@@ -60,8 +60,8 @@ berjalan sebagai Vercel Function pada `api/[...path].py`.
 1. Impor repo `Tuagus23/FIS-MAMDANI-GWO-` di Vercel.
 2. Biarkan **Root Directory** di repo utama dan gunakan pengaturan dari
    `vercel.json`.
-3. Deploy. Tailwind CSS dibangun dengan `npm run build:css`; aset hasilnya
-   disajikan dari `web`.
+3. Deploy. `npm run build` membangun Tailwind CSS dan bundle animasi; aset
+   hasilnya disajikan dari `web`.
 4. Setelah deployment selesai, `/api/health` menampilkan status API.
 
 Dashboard publik dan endpoint simulasi dapat diakses oleh siapa pun yang
