@@ -58,6 +58,7 @@ function bindCardMotion() {
 function visibleRevealTargets() {
   const activeView = document.querySelector(".view-section:not(.hidden)");
   if (!activeView) return [];
+  if (activeView.classList.contains("process-page")) return [];
   return [
     document.querySelector(".page-heading"),
     ...activeView.querySelectorAll(".panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric, .metric-glossary, .info-strip, .member-card"),

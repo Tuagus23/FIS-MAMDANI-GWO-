@@ -1,4 +1,4 @@
-const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, charts: {}, view: "hasil", authClient: null, dashboardRequestId: 0 };
+const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, gwoProcess: null, gwoProcessLoading: false, charts: {}, view: "hasil", authClient: null, dashboardRequestId: 0 };
 const inviteType = new URLSearchParams(window.location.hash.slice(1)).get("type")
   || new URLSearchParams(window.location.search).get("type");
 
@@ -17,6 +17,16 @@ const viewText = {
     title: "Fungsi keanggotaan",
     description: "Melihat cara energi, jarak, dan jumlah tetangga diterjemahkan menjadi skor kandidat cluster head.",
     breadcrumb: "Fungsi keanggotaan",
+  },
+  gwo: {
+    title: "Proses GWO",
+    description: "Telusuri cara Gray Wolf Optimizer menyetel titik fungsi keanggotaan dan memilih solusi terbaik.",
+    breadcrumb: "Proses GWO",
+  },
+  fis: {
+    title: "Proses FIS Mamdani",
+    description: "Ikuti perubahan energi, jarak, dan jumlah tetangga menjadi skor kandidat cluster head.",
+    breadcrumb: "Proses FIS Mamdani",
   },
   anggota: {
     title: "Anggota kelompok",
@@ -146,8 +156,15 @@ function setView(view, { updateHash = false } = {}) {
     location.hash = view;
     return;
   }
+  const previousView = state.view;
   state.view = view;
   $$(".view-section").forEach((section) => section.classList.toggle("hidden", section.id !== `view-${view}`));
+  const activeSection = $(`#view-${view}`);
+  activeSection.classList.remove("is-entering");
+  if (previousView !== view && ["gwo", "fis"].includes(view)) {
+    void activeSection.offsetWidth;
+    activeSection.classList.add("is-entering");
+  }
   $$("[data-view]").forEach((button) => {
     const active = button.dataset.view === view;
     button.classList.toggle("is-active", active);
@@ -165,6 +182,8 @@ function setView(view, { updateHash = false } = {}) {
   if (view === "hasil") setTimeout(() => renderLifetimeChart(state.dashboard?.summary || []), 0);
   if (view === "validasi") setTimeout(() => renderValidationChart(state.dashboard?.validation || []), 0);
   if (view === "membership") setTimeout(() => renderMembershipCharts(state.dashboard?.membership, state.dashboard?.membership_baseline, state.dashboard?.membership_ranges), 0);
+  if (view === "gwo") loadGwoProcess();
+  if (view === "fis") setTimeout(renderFisProcess, 0);
   if (view === "simulasi" && state.simulation) setTimeout(() => renderSimulationChart(state.simulation.history), 0);
 }
 
@@ -576,6 +595,249 @@ function renderMembershipCharts(membership, baseline, ranges) {
   window.dashboardMotion?.refresh();
 }
 
+function loadGwoProcess() {
+  if (state.gwoProcess) {
+    renderGwoProcess();
+    return;
+  }
+  if (state.gwoProcessLoading) return;
+  state.gwoProcessLoading = true;
+  $("#gwoProcessStatus").classList.remove("hidden");
+  $("#gwoProcessStatus").textContent = "Memuat riwayat GWO hasil reproduksi…";
+  fetch("/gwo-process-data.json", { headers: { Accept: "application/json" } })
+    .then((response) => readApiResponse(response, "Riwayat GWO tidak dapat dimuat."))
+    .then((data) => {
+      state.gwoProcess = data;
+      renderGwoProcess();
+    })
+    .catch((error) => {
+      $("#gwoProcessStatus").classList.remove("hidden");
+      $("#gwoProcessStatus").textContent = requestErrorMessage(error, "Riwayat GWO tidak dapat dimuat.");
+    })
+    .finally(() => { state.gwoProcessLoading = false; });
+}
+
+function renderGwoProcess() {
+  const data = state.gwoProcess;
+  if (!data) return;
+  const config = data.configuration;
+  const report = data.comparison;
+  const reproducedDatasetIsSelected = state.dashboard?.dataset?.id === data.dataset_id;
+  const status = $("#gwoProcessStatus");
+  status.classList.remove("hidden");
+  status.classList.toggle("notice-success", data.matches_saved_membership && reproducedDatasetIsSelected);
+  status.classList.toggle("notice-warning", !data.matches_saved_membership || !reproducedDatasetIsSelected);
+  status.textContent = data.matches_saved_membership && reproducedDatasetIsSelected
+    ? `Riwayat ini cocok dengan MF tersimpan pada ${data.dataset_label}; konfigurasi GWO proyek dijalankan ulang secara deterministik.`
+    : data.matches_saved_membership
+      ? `Riwayat kalibrasi ini cocok dengan MF tersimpan pada ${data.dataset_label}. Dataset aktif ${state.dashboard?.dataset?.label || "belum dimuat"}; tabel MF di bawah mengikuti pilihan dataset, sedangkan grafik dan fitness tetap dari eksperimen utama.`
+      : `Riwayat ini adalah reproduksi dari konfigurasi proyek. MF akhirnya berbeda dari file tersimpan pada ${data.dataset_label}; angka tidak diklaim sebagai log historis file tersebut.`;
+
+  const metricColumns = [
+    { key: "name", label: "Tahap" },
+    { key: "score", label: "Fitness", render: formatDecimal },
+    { key: "fnd", label: "FND", render: formatDecimal },
+    { key: "r10", label: "R10", render: formatDecimal },
+    { key: "hnd", label: "HND", render: formatDecimal },
+    { key: "r90", label: "R90", render: formatDecimal },
+    { key: "lnd", label: "LND", render: formatDecimal },
+    { key: "peak_residual", label: "Energi puncak", render: formatDecimal },
+    { key: "mean_residual", label: "Energi rata-rata", render: formatDecimal },
+    { key: "pdr_pct", label: "PDR (%)", render: formatDecimal },
+  ];
+  const comparisonRows = [
+    { name: "MF awal", ...report.manual },
+    { name: "Warm start", ...report.warm_start },
+    { name: "Solusi terbaik", ...report.best },
+  ];
+  const weightLabels = {
+    fnd: "FND", r10: "R10", hnd: "HND", r90: "R90", lnd: "LND",
+    peak_residual: "Energi puncak tersisa", mean_residual: "Rata-rata energi tersisa", pdr: "PDR",
+  };
+  const weights = Object.entries(data.weights).map(([key, value]) => ({ metric: weightLabels[key] || key, weight: value }));
+
+  $("#gwoProcessContent").innerHTML = `
+    <article class="panel process-overview">
+      <div class="panel-heading"><div><h2 class="panel-title">GWO menyetel kurva, FIS tetap memilih node</h2><p class="panel-caption">Grey Wolf Optimizer mencari titik transisi MF input yang memberi skor fitness terbaik. Setiap kandidat dinilai dengan menjalankan protokol GWO pada kumpulan topologi tetap.</p></div><span class="panel-unit">${escapeHtml(config.fitness_mode)} · maksimum</span></div>
+      <div class="process-stat-grid">
+        <div><span>Serigala</span><strong>${formatInteger(config.wolves)}</strong></div><div><span>Generasi pembaruan</span><strong>${formatInteger(config.iterations)}</strong></div><div><span>Dimensi pencarian</span><strong>${formatInteger(config.dimension)}</strong></div><div><span>Evaluasi populasi</span><strong>${formatInteger(config.evaluations)}</strong></div>
+      </div>
+      <p class="process-note">Konfigurasi reproduksi: ${formatInteger(config.fitness_rounds)} ronde · ${formatInteger(config.fitness_seeds.length)} seed fitness (${config.fitness_seeds.join(", ")}) · seed optimizer ${formatInteger(config.optimizer_seed)}. Variabel area ${formatDecimal(config.simulation.width_m)} × ${formatDecimal(config.simulation.height_m)} m; ${formatInteger(config.simulation.nodes)} node.</p>
+      <ol class="process-flow" aria-label="Tahapan kalibrasi GWO"><li><span>Representasi</span><strong>13 koordinat MF</strong><p>Tiga untuk energi, lima untuk jarak, dan lima untuk tetangga.</p></li><li><span>Populasi awal</span><strong>${formatInteger(config.wolves)} wolf</strong><p>Vektor MF ahli dipakai sebagai warm start pada populasi.</p></li><li><span>Evaluasi</span><strong>Fitness pada ${formatInteger(config.fitness_seeds.length)} seed tetap</strong><p>Setiap kandidat menjalankan protokol GWO hingga ${formatInteger(config.fitness_rounds)} ronde.</p></li><li><span>Pembaruan</span><strong>Alpha · beta · delta</strong><p>Ketiga pemimpin membentuk posisi wolf pada generasi berikutnya.</p></li><li><span>Hasil</span><strong>Simpan solusi terbaik</strong><p>Solusi global terbaik diubah kembali menjadi MF untuk protokol GWO.</p></li></ol>
+    </article>
+
+    <article class="panel">
+      <div class="panel-heading"><div><h2 class="panel-title">Konvergensi fitness</h2><p class="panel-caption">Garis terbaik menunjukkan solusi global terbaik sampai generasi itu; garis rata-rata merangkum populasi generasi tersebut. Nilai lebih tinggi lebih baik.</p></div><span class="panel-unit">skor 0–1</span></div>
+      <div class="chart-frame chart-frame-tall"><canvas id="gwoFitnessChart" role="img" aria-label="Grafik fitness terbaik dan rata-rata populasi per generasi"></canvas></div>
+      <details class="chart-data-details"><summary>Lihat nilai fitness per generasi</summary><div id="gwoFitnessTable" class="table-wrap"></div></details>
+    </article>
+
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(300px,0.7fr)]">
+      <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Pemimpin populasi</h2><p class="panel-caption">Alpha, beta, dan delta dipilih ulang menurut fitness di setiap generasi.</p></div><label class="process-select-label" for="gwoIterationSelect">Generasi<select id="gwoIterationSelect" class="dataset-select"><option value="">Pilih generasi</option></select></label></div><div id="gwoLeaderTable" class="table-wrap"></div></article>
+      <aside class="notice process-explainer"><h2>Pemimpin dan kandidat lain</h2><p><strong>Alpha</strong> adalah kandidat terbaik, <strong>beta</strong> kedua, dan <strong>delta</strong> ketiga. Semua wolf memperbarui posisi dengan menggabungkan tarikan ketiga pemimpin.</p><p>Implementasi proyek tidak menetapkan peran <strong>gamma</strong>. Kandidat rank 4 pada tabel tetap wolf biasa, bukan pemimpin keempat.</p><p>Koordinat yang diperbarui adalah 13 titik MF input: 3 energi, 5 jarak, dan 5 jumlah tetangga. MF output dan 27 aturan Mamdani tetap.</p><details class="chart-data-details"><summary>Lihat rumus perpindahan</summary><div class="gwo-equations"><code>Dα = |C₁ × Xα − X|</code><code>Yα = Xα − A₁ × Dα</code><code>X baru = clip((Yα + Yβ + Yδ) / 3, 0, 1)</code><code>A = a(2r₁ − 1) · C = 2r₂</code><code>a = 2 − 2t / (T − 1)</code></div><p class="table-footnote">t adalah indeks generasi dan T jumlah pembaruan. Nilai a turun dari 2 ke 0; tiap wolf bergerak menuju gabungan tiga pemimpin.</p></details></aside>
+    </div>
+
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Apa yang dinilai oleh fitness?</h2><p class="panel-caption">Fitness menggabungkan metrik jaringan yang dinormalisasi. Pada mode lifetime, setiap komponen aktif berbobot 0,30 lalu total dibagi jumlah bobot.</p></div><span class="panel-unit">fitness ${formatDecimal(report.manual.score)} → ${formatDecimal(report.best.score)}</span></div><div class="table-wrap">${makeTable(metricColumns, comparisonRows.map((row) => ({ ...row, score: row.score })))}</div><div class="gwo-weight-table">${makeTable([{ key: "metric", label: "Komponen" }, { key: "weight", label: "Bobot", render: formatDecimal }], weights)}</div><p class="table-footnote">FND = node pertama mati; R10/R90 = 10%/90% node mati; HND = separuh mati; LND = node terakhir mati. Milestone yang belum tercapai dihitung pada batas horizon ${formatInteger(config.fitness_rounds)} ronde.</p></article>
+
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">MF GWO pada dataset terpilih</h2><p class="panel-caption">Titik kurva input pada file dashboard yang sedang dipilih, bukan vektor normalisasi tiap wolf.</p></div><span class="panel-unit">${escapeHtml(state.dashboard?.dataset?.label || "Memuat dataset")}</span></div><div id="gwoStoredMembershipTable" class="table-wrap"></div></article>
+  `;
+
+  const historyRows = data.history.map((row) => ({ ...row }));
+  $("#gwoFitnessTable").innerHTML = makeTable([
+    { key: "iteration", label: "Generasi", render: formatInteger },
+    { key: "best_fitness", label: "Fitness terbaik", render: formatDecimal },
+    { key: "mean_fitness", label: "Rata-rata populasi", render: formatDecimal },
+  ], historyRows);
+  replaceChart("gwoFitness", "gwoFitnessChart", {
+    type: "line",
+    data: {
+      labels: data.history.map((row) => `Gen ${row.iteration}`),
+      datasets: [
+        { label: "Terbaik sejauh ini", data: data.history.map((row) => row.best_fitness), borderColor: "#00765e", backgroundColor: "#00765e", borderWidth: 2.5, pointRadius: 3, tension: 0 },
+        { label: "Rata-rata populasi", data: data.history.map((row) => row.mean_fitness), borderColor: "#3568a8", backgroundColor: "#3568a8", borderWidth: 2, borderDash: [5, 4], pointRadius: 2, tension: 0 },
+      ],
+    },
+    options: chartOptions("Fitness"),
+  });
+  const iterationSelect = $("#gwoIterationSelect");
+  iterationSelect.innerHTML = data.history.map((row) => `<option value="${row.iteration}">Generasi ${row.iteration}${row.iteration === 0 ? " · awal" : ""}</option>`).join("");
+  iterationSelect.addEventListener("change", (event) => renderGwoLeaders(Number(event.target.value)));
+  renderGwoLeaders(0);
+  renderGwoStoredMembership();
+}
+
+function renderGwoLeaders(iteration) {
+  const leaders = (state.gwoProcess?.population || [])
+    .filter((row) => row.iteration === iteration && row.rank <= 4)
+    .sort((a, b) => a.rank - b.rank)
+    .map((row) => ({
+      wolf: row.wolf,
+      rank: row.rank,
+      role: row.role,
+      fitness: row.fitness,
+      vector: row.position.map((value, index) => `x${index + 1}=${formatDecimal(value)}`).join(" · "),
+    }));
+  $("#gwoLeaderTable").innerHTML = makeTable([
+    { key: "role", label: "Peran", render: (value, row) => `${escapeHtml(formatRoleLabel(value, row.rank))} · Wolf ${formatInteger(row.wolf)}` },
+    { key: "fitness", label: "Fitness", render: formatDecimal },
+    { key: "vector", label: "Vektor 13 koordinat", render: (value) => `<details><summary>Lihat posisi</summary><p class="process-vector">${escapeHtml(value)}</p></details>` },
+  ], leaders);
+}
+
+function formatRoleLabel(role, rank) {
+  return ({ alpha: "Alpha · terbaik", beta: "Beta · kedua", delta: "Delta · ketiga" })[role] || `Kandidat rank ${rank}`;
+}
+
+function renderGwoStoredMembership() {
+  const target = $("#gwoStoredMembershipTable");
+  const membership = state.dashboard?.membership;
+  if (!target) return;
+  if (!membership || state.dashboard?.dataset?.id !== state.datasetId) {
+    target.innerHTML = '<p class="table-footnote">Memuat fungsi keanggotaan untuk dataset terpilih…</p>';
+    return;
+  }
+  const rows = Object.entries(membership).flatMap(([variable, functions]) => Object.entries(functions).map(([label, definition]) => ({
+    variable: ({ energy: "Energi", distance: "Jarak", neighbors: "Jumlah tetangga", output: "Output" })[variable] || variable,
+    label,
+    shape: definition.shape === "trap" ? "Trapesium" : "Segitiga",
+    points: definition.points.map((value) => formatDecimal(value)).join(", "),
+  })));
+  target.innerHTML = makeTable([
+    { key: "variable", label: "Variabel" }, { key: "label", label: "Himpunan" },
+    { key: "shape", label: "Bentuk MF" }, { key: "points", label: "Titik kurva" },
+  ], rows);
+}
+
+function renderFisProcess() {
+  const dashboard = state.dashboard;
+  const content = $("#fisProcessContent");
+  if (!dashboard?.fis_process || !dashboard.membership || !dashboard.membership_baseline) {
+    $("#fisProcessStatus").classList.remove("hidden");
+    $("#fisProcessStatus").textContent = "Data FIS belum dimuat. Pilih dataset yang tersedia atau muat ulang halaman.";
+    content.innerHTML = "";
+    return;
+  }
+  $("#fisProcessStatus").classList.add("hidden");
+  const fis = dashboard.fis_process;
+  content.innerHTML = `
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Dari kondisi node ke skor</h2><p class="panel-caption">FIS Mamdani mengubah tiga masukan node menjadi skor kelayakan. Protokol FUZZY menggunakan MF awal; protokol GWO menggunakan MF input yang dikalibrasi. Basis aturan dan MF output tetap sama.</p></div><span class="panel-unit">${formatInteger(fis.rule_count)} aturan · ${formatInteger(fis.output_points)} titik output</span></div><ol class="process-flow"><li><span>Masukan</span><strong>Energi · jarak · tetangga</strong><p>Fitur node aktif dihitung pada tiap ronde.</p></li><li><span>Fuzzifikasi</span><strong>Derajat keanggotaan 0–1</strong><p>Setiap masukan dapat masuk ke beberapa himpunan linguistik.</p></li><li><span>Inferensi Mamdani</span><strong>MIN untuk AND, MAX untuk agregasi</strong><p>Kekuatan aturan adalah nilai minimum tiga derajat input.</p></li><li><span>Defuzzifikasi</span><strong>Titik berat (centroid)</strong><p>Output fuzzy digabung lalu diringkas menjadi satu skor tegas.</p></li><li><span>Pemilihan CH</span><strong>Urutkan skor node</strong><p>Node dengan skor tertinggi dipilih sesuai jumlah cluster head.</p></li></ol></article>
+
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Coba satu kandidat node</h2><p class="panel-caption">Kalkulator mengikuti MF dan 27 aturan yang digunakan kode untuk dataset terpilih. Skor ini untuk satu kandidat, belum merupakan pemilihan CH dari seluruh node.</p></div></div><div class="fis-workbench"><form id="fisWorkbenchForm" class="fis-inputs"><label class="field-label" for="fisModelSelect">Kurva input<select id="fisModelSelect" class="field-input"><option value="gwo">MF GWO · dataset aktif</option><option value="baseline">MF awal</option></select></label><label class="field-label" for="fisEnergyValue">Energi tersisa<span class="field-help">fraksi dari energi awal (0–1)</span><input id="fisEnergyValue" class="field-input" type="number" min="0" max="1" step="0.01" value="0.8" required></label><label class="field-label" for="fisDistanceValue">Jarak ke base station<span class="field-help">meter</span><input id="fisDistanceValue" class="field-input" type="number" min="0" max="${escapeHtml(dashboard.membership_ranges?.distance?.max || 150)}" step="0.1" value="30" required></label><label class="field-label" for="fisNeighborsValue">Jumlah tetangga<span class="field-help">node di sekitar kandidat</span><input id="fisNeighborsValue" class="field-input" type="number" min="0" max="${Math.max(0, (finiteNumber(fis.nodes) || 30) - 1)}" step="1" value="5" required></label><button class="button button-primary" type="submit">Hitung skor FIS</button></form><div class="fis-result"><div class="fis-score-line"><span>Skor kelayakan kandidat</span><strong id="fisCandidateScore">—</strong></div><p id="fisResultCaption" class="panel-caption">Ubah kondisi lalu hitung untuk melihat jalur inferensi.</p><h3>Derajat tiap masukan</h3><div id="fisDegreesTable" class="table-wrap"></div><h3>Aturan yang aktif</h3><div id="fisActiveRules" class="table-wrap"></div></div></div></article>
+
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Basis aturan Mamdani</h2><p class="panel-caption">Semua kombinasi energi × jarak × jumlah tetangga menghasilkan ${formatInteger(fis.rule_count)} aturan. Konsekuen di bawah diambil langsung dari FuzzyRuleBase pada server.</p></div></div><div id="fisRuleTable" class="table-wrap"></div></article>
+  `;
+  const labels = { Rendah: "Rendah", Sedang: "Sedang", Tinggi: "Tinggi", Dekat: "Dekat", Jauh: "Jauh", Sedikit: "Sedikit", Banyak: "Banyak" };
+  $("#fisRuleTable").innerHTML = makeTable([
+    { key: "index", label: "Aturan", render: (value) => `R${formatInteger(value)}` },
+    { key: "energy", label: "Energi" }, { key: "distance", label: "Jarak" },
+    { key: "neighbors", label: "Tetangga" }, { key: "output", label: "Skor output" },
+  ], fis.rules.map((rule, index) => ({ index: index + 1, ...rule, energy: labels[rule.energy] || rule.energy, distance: labels[rule.distance] || rule.distance, neighbors: labels[rule.neighbors] || rule.neighbors, output: labels[rule.output] || rule.output })));
+  $("#fisWorkbenchForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!event.currentTarget.reportValidity()) return;
+    calculateFisCandidate();
+  });
+  $("#fisModelSelect").addEventListener("change", calculateFisCandidate);
+  calculateFisCandidate();
+}
+
+function calculateFisCandidate() {
+  const dashboard = state.dashboard;
+  const fis = dashboard?.fis_process;
+  if (!fis || !$("#fisEnergyValue")) return;
+  const modelName = $("#fisModelSelect").value;
+  const membership = modelName === "baseline" ? dashboard.membership_baseline : dashboard.membership;
+  const inputs = {
+    energy: Number($("#fisEnergyValue").value),
+    distance: Number($("#fisDistanceValue").value),
+    neighbors: Number($("#fisNeighborsValue").value),
+  };
+  const labels = {
+    energy: ["Rendah", "Sedang", "Tinggi"],
+    distance: ["Dekat", "Sedang", "Jauh"],
+    neighbors: ["Sedikit", "Sedang", "Banyak"],
+  };
+  const degrees = Object.fromEntries(Object.entries(inputs).map(([key, value]) => [
+    key,
+    Object.fromEntries(labels[key].map((label) => [label, membershipDegree(membership[key][label].shape, membership[key][label].points, value)])),
+  ]));
+  const rules = fis.rules.map((rule, index) => ({
+    index: index + 1,
+    ...rule,
+    strength: Math.min(degrees.energy[rule.energy], degrees.distance[rule.distance], degrees.neighbors[rule.neighbors]),
+  }));
+  const activations = { Rendah: 0, Sedang: 0, Tinggi: 0 };
+  rules.forEach((rule) => { activations[rule.output] = Math.max(activations[rule.output], rule.strength); });
+  const outputMembership = membership.output;
+  const outputX = Array.from({ length: fis.output_points }, (_, index) => index / (fis.output_points - 1));
+  const aggregate = outputX.map((x) => Math.max(...Object.entries(activations).map(([label, activation]) => Math.min(
+    activation,
+    membershipDegree(outputMembership[label].shape, outputMembership[label].points, x),
+  ))));
+  let area = 0;
+  let moment = 0;
+  for (let index = 0; index < outputX.length - 1; index += 1) {
+    const dx = outputX[index + 1] - outputX[index];
+    area += ((aggregate[index] + aggregate[index + 1]) * dx) / 2;
+    moment += ((aggregate[index] * outputX[index] + aggregate[index + 1] * outputX[index + 1]) * dx) / 2;
+  }
+  const score = area > 1e-15 ? moment / area : 0.5;
+  $("#fisCandidateScore").textContent = formatDecimal(score);
+  $("#fisResultCaption").textContent = `Model ${modelName === "baseline" ? "MF awal" : `GWO · ${dashboard.dataset.label}`} · MIN memberi kekuatan tiap aturan, lalu MAX menggabungkan kurva output.`;
+  const variableLabels = { energy: "Energi", distance: "Jarak", neighbors: "Tetangga" };
+  $("#fisDegreesTable").innerHTML = makeTable([
+    { key: "variable", label: "Input" }, { key: "low", label: "Rendah / dekat / sedikit", render: formatDecimal },
+    { key: "middle", label: "Sedang", render: formatDecimal }, { key: "high", label: "Tinggi / jauh / banyak", render: formatDecimal },
+  ], Object.entries(degrees).map(([key, values]) => ({ variable: variableLabels[key], low: values[labels[key][0]], middle: values[labels[key][1]], high: values[labels[key][2]] })));
+  const activeRules = rules.filter((rule) => rule.strength > 0).sort((a, b) => b.strength - a.strength || a.index - b.index);
+  $("#fisActiveRules").innerHTML = makeTable([
+    { key: "index", label: "Aturan", render: (value) => `R${formatInteger(value)}` },
+    { key: "energy", label: "Energi" }, { key: "distance", label: "Jarak" },
+    { key: "neighbors", label: "Tetangga" }, { key: "output", label: "Konsekuen" },
+    { key: "strength", label: "Kekuatan MIN", render: formatDecimal },
+  ], activeRules);
+}
+
 function updateDatasetDescription(dataset) {
   $("#datasetDescription").textContent = dataset?.description || "Data eksperimen yang dipilih.";
 }
@@ -637,6 +899,11 @@ async function loadDashboard(datasetId = state.datasetId) {
     renderHistoryChart(data.history);
     renderValidation(data.validation);
     renderMembershipCharts(data.membership, data.membership_baseline, data.membership_ranges);
+    if (state.view === "fis") renderFisProcess();
+    if (state.view === "gwo") {
+      if (state.gwoProcess) renderGwoProcess();
+      else renderGwoStoredMembership();
+    }
     $("#historyDataDetails").dataset.loaded = "false";
     $("#historyDataTable").innerHTML = "";
     setConnectionStatus("Terhubung");

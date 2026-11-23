@@ -21,7 +21,7 @@ from auth import (
     verify_authorization_header,
 )
 from wsn_gwo_v2.config import SimulationConfig
-from wsn_gwo_v2.fuzzy import MembershipSet
+from wsn_gwo_v2.fuzzy import FuzzyRuleBase, MembershipSet
 from wsn_gwo_v2.wsn import NetworkSimulator, create_topology
 
 
@@ -189,6 +189,21 @@ def dashboard_data(dataset_id: str) -> dict:
         "membership": membership,
         "membership_baseline": baseline,
         "membership_ranges": _membership_ranges(membership, baseline, SimulationConfig().nodes),
+        "fis_process": {
+            "rule_count": len(FuzzyRuleBase.standard().rules),
+            "output_points": SimulationConfig().fuzzy_output_points,
+            "nodes": SimulationConfig().nodes,
+            "cluster_head_count": SimulationConfig().cluster_head_count,
+            "rules": [
+                {
+                    "energy": rule.energy,
+                    "distance": rule.distance,
+                    "neighbors": rule.neighbors,
+                    "output": rule.output,
+                }
+                for rule in FuzzyRuleBase.standard().rules
+            ],
+        },
     }
 
 
