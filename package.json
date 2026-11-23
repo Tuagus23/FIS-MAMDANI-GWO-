@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "npm run build:css && npm run build:animations",
-    "build:animations": "esbuild web/animations.js --bundle --format=iife --target=es2020 --outfile=web/animations.bundle.js --minify && esbuild web/login-team.js --bundle --format=iife --target=es2020 --outfile=web/login-team.bundle.js --minify",
+    "build:animations": "esbuild web/animations.js --bundle --format=iife --target=es2020 --outfile=web/animations.bundle.js --minify",
     "build:css": "tailwindcss -i ./web/tailwind.input.css -o ./web/tailwind.css --minify"
   },
   "devDependencies": {

@@ -4,5 +4,4 @@ __pycache__/
 node_modules/
 results/
 web/animations.bundle.*
-web/login-team.bundle.js
 
