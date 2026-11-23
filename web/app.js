@@ -677,6 +677,8 @@ function renderGwoProcess() {
       <aside class="notice process-explainer"><h2>Pemimpin dan kandidat lain</h2><p><strong>Alpha</strong> adalah kandidat terbaik, <strong>beta</strong> kedua, dan <strong>delta</strong> ketiga. Semua wolf memperbarui posisi dengan menggabungkan tarikan ketiga pemimpin.</p><p>Implementasi proyek tidak menetapkan peran <strong>gamma</strong>. Kandidat rank 4 pada tabel tetap wolf biasa, bukan pemimpin keempat.</p><p>Koordinat yang diperbarui adalah 13 titik MF input: 3 energi, 5 jarak, dan 5 jumlah tetangga. MF output dan 27 aturan Mamdani tetap.</p><details class="chart-data-details"><summary>Lihat rumus perpindahan</summary><div class="gwo-equations"><code>Dα = |C₁ × Xα − X|</code><code>Yα = Xα − A₁ × Dα</code><code>X baru = clip((Yα + Yβ + Yδ) / 3, 0, 1)</code><code>A = a(2r₁ − 1) · C = 2r₂</code><code>a = 2 − 2t / (T − 1)</code></div><p class="table-footnote">t adalah indeks generasi dan T jumlah pembaruan. Nilai a turun dari 2 ke 0; tiap wolf bergerak menuju gabungan tiga pemimpin.</p></details></aside>
     </div>
 
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Posisi Alpha di ruang pencarian</h2><p class="panel-caption">Tiga belas koordinat Alpha pada generasi terpilih. GWO mencari setiap titik dalam skala 0–1, lalu decoder mengubahnya menjadi batas kurva MF.</p></div><span id="gwoAlphaSummary" class="panel-unit"></span></div><div id="gwoAlphaCoordinates" class="gwo-coordinate-grid" aria-live="polite"></div><p class="table-footnote">x1–x3 mengatur energi · x4–x8 mengatur jarak · x9–x13 mengatur jumlah tetangga. Batang menunjukkan posisi pencarian ternormalisasi, bukan nilai energi atau meter.</p></article>
+
     <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Apa yang dinilai oleh fitness?</h2><p class="panel-caption">Fitness menggabungkan metrik jaringan yang dinormalisasi. Pada mode lifetime, setiap komponen aktif berbobot 0,30 lalu total dibagi jumlah bobot.</p></div><span class="panel-unit">fitness ${formatDecimal(report.manual.score)} → ${formatDecimal(report.best.score)}</span></div><div class="table-wrap">${makeTable(metricColumns, comparisonRows.map((row) => ({ ...row, score: row.score })))}</div><div class="gwo-weight-table">${makeTable([{ key: "metric", label: "Komponen" }, { key: "weight", label: "Bobot", render: formatDecimal }], weights)}</div><p class="table-footnote">FND = node pertama mati; R10/R90 = 10%/90% node mati; HND = separuh mati; LND = node terakhir mati. Milestone yang belum tercapai dihitung pada batas horizon ${formatInteger(config.fitness_rounds)} ronde.</p></article>
 
     <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">MF GWO pada dataset terpilih</h2><p class="panel-caption">Titik kurva input pada file dashboard yang sedang dipilih, bukan vektor normalisasi tiap wolf.</p></div><span class="panel-unit">${escapeHtml(state.dashboard?.dataset?.label || "Memuat dataset")}</span></div><div id="gwoStoredMembershipTable" class="table-wrap"></div></article>
@@ -707,8 +709,11 @@ function renderGwoProcess() {
 }
 
 function renderGwoLeaders(iteration) {
-  const leaders = (state.gwoProcess?.population || [])
-    .filter((row) => row.iteration === iteration && row.rank <= 4)
+  const population = (state.gwoProcess?.population || [])
+    .filter((row) => row.iteration === iteration)
+    .sort((a, b) => a.rank - b.rank);
+  const leaders = population
+    .filter((row) => row.rank <= 4)
     .sort((a, b) => a.rank - b.rank)
     .map((row) => ({
       wolf: row.wolf,
@@ -722,6 +727,31 @@ function renderGwoLeaders(iteration) {
     { key: "fitness", label: "Fitness", render: formatDecimal },
     { key: "vector", label: "Vektor 13 koordinat", render: (value) => `<details><summary>Lihat posisi</summary><p class="process-vector">${escapeHtml(value)}</p></details>` },
   ], leaders);
+
+  const alpha = population.find((row) => row.role === "alpha") || population[0];
+  const coordinates = $("#gwoAlphaCoordinates");
+  const summary = $("#gwoAlphaSummary");
+  if (!coordinates || !summary) return;
+  if (!alpha?.position?.length) {
+    summary.textContent = "Alpha belum tersedia";
+    coordinates.innerHTML = '<p class="table-footnote">Posisi Alpha tidak tersedia untuk generasi ini.</p>';
+    return;
+  }
+  summary.textContent = `Generasi ${formatInteger(iteration)} · Wolf ${formatInteger(alpha.wolf)} · fitness ${formatDecimal(alpha.fitness)}`;
+  const groups = [
+    { label: "Energi", range: [0, 3], tone: "energy" },
+    { label: "Jarak", range: [3, 8], tone: "distance" },
+    { label: "Jumlah tetangga", range: [8, 13], tone: "neighbors" },
+  ];
+  coordinates.innerHTML = groups.map((group) => {
+    const items = alpha.position.slice(group.range[0], group.range[1]).map((value, offset) => {
+      const index = group.range[0] + offset;
+      const normalized = Math.max(0, Math.min(1, finiteNumber(value) ?? 0));
+      const percent = normalized * 100;
+      return `<div class="gwo-coordinate-item"><div><span>x${index + 1}</span><strong>${formatDecimal(normalized)}</strong></div><span class="gwo-coordinate-track" role="meter" aria-label="Koordinat x${index + 1}: ${formatDecimal(normalized)} dari 0 sampai 1" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${normalized}"><i style="width:${percent}%"></i></span></div>`;
+    }).join("");
+    return `<section class="gwo-coordinate-group gwo-coordinate-${group.tone}"><h3>${group.label}</h3><div class="gwo-coordinate-items">${items}</div></section>`;
+  }).join("");
 }
 
 function formatRoleLabel(role, rank) {
@@ -762,7 +792,7 @@ function renderFisProcess() {
   content.innerHTML = `
     <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Dari kondisi node ke skor</h2><p class="panel-caption">FIS Mamdani mengubah tiga masukan node menjadi skor kelayakan. Protokol FUZZY menggunakan MF awal; protokol GWO menggunakan MF input yang dikalibrasi. Basis aturan dan MF output tetap sama.</p></div><span class="panel-unit">${formatInteger(fis.rule_count)} aturan · ${formatInteger(fis.output_points)} titik output</span></div><ol class="process-flow"><li><span>Masukan</span><strong>Energi · jarak · tetangga</strong><p>Fitur node aktif dihitung pada tiap ronde.</p></li><li><span>Fuzzifikasi</span><strong>Derajat keanggotaan 0–1</strong><p>Setiap masukan dapat masuk ke beberapa himpunan linguistik.</p></li><li><span>Inferensi Mamdani</span><strong>MIN untuk AND, MAX untuk agregasi</strong><p>Kekuatan aturan adalah nilai minimum tiga derajat input.</p></li><li><span>Defuzzifikasi</span><strong>Titik berat (centroid)</strong><p>Output fuzzy digabung lalu diringkas menjadi satu skor tegas.</p></li><li><span>Pemilihan CH</span><strong>Urutkan skor node</strong><p>Node dengan skor tertinggi dipilih sesuai jumlah cluster head.</p></li></ol></article>
 
-    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Coba satu kandidat node</h2><p class="panel-caption">Kalkulator mengikuti MF dan 27 aturan yang digunakan kode untuk dataset terpilih. Skor ini untuk satu kandidat, belum merupakan pemilihan CH dari seluruh node.</p></div></div><div class="fis-workbench"><form id="fisWorkbenchForm" class="fis-inputs"><label class="field-label" for="fisModelSelect">Kurva input<select id="fisModelSelect" class="field-input"><option value="gwo">MF GWO · dataset aktif</option><option value="baseline">MF awal</option></select></label><label class="field-label" for="fisEnergyValue">Energi tersisa<span class="field-help">fraksi dari energi awal (0–1)</span><input id="fisEnergyValue" class="field-input" type="number" min="0" max="1" step="0.01" value="0.8" required></label><label class="field-label" for="fisDistanceValue">Jarak ke base station<span class="field-help">meter</span><input id="fisDistanceValue" class="field-input" type="number" min="0" max="${escapeHtml(dashboard.membership_ranges?.distance?.max || 150)}" step="0.1" value="30" required></label><label class="field-label" for="fisNeighborsValue">Jumlah tetangga<span class="field-help">node di sekitar kandidat</span><input id="fisNeighborsValue" class="field-input" type="number" min="0" max="${Math.max(0, (finiteNumber(fis.nodes) || 30) - 1)}" step="1" value="5" required></label><button class="button button-primary" type="submit">Hitung skor FIS</button></form><div class="fis-result"><div class="fis-score-line"><span>Skor kelayakan kandidat</span><strong id="fisCandidateScore">—</strong></div><p id="fisResultCaption" class="panel-caption">Ubah kondisi lalu hitung untuk melihat jalur inferensi.</p><h3>Derajat tiap masukan</h3><div id="fisDegreesTable" class="table-wrap"></div><h3>Aturan yang aktif</h3><div id="fisActiveRules" class="table-wrap"></div></div></div></article>
+    <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Coba satu kandidat node</h2><p class="panel-caption">Kalkulator mengikuti MF dan 27 aturan yang digunakan kode untuk dataset terpilih. Skor ini untuk satu kandidat, belum merupakan pemilihan CH dari seluruh node.</p></div></div><div class="fis-workbench"><form id="fisWorkbenchForm" class="fis-inputs"><label class="field-label" for="fisModelSelect">Kurva input<select id="fisModelSelect" class="field-input"><option value="gwo">MF GWO · dataset aktif</option><option value="baseline">MF awal</option></select></label><label class="field-label" for="fisEnergyValue">Energi tersisa<span class="field-help">fraksi dari energi awal (0–1)</span><input id="fisEnergyValue" class="field-input" type="number" min="0" max="1" step="0.01" value="0.8" required></label><label class="field-label" for="fisDistanceValue">Jarak ke base station<span class="field-help">meter</span><input id="fisDistanceValue" class="field-input" type="number" min="0" max="${escapeHtml(dashboard.membership_ranges?.distance?.max || 150)}" step="0.1" value="30" required></label><label class="field-label" for="fisNeighborsValue">Jumlah tetangga<span class="field-help">node di sekitar kandidat</span><input id="fisNeighborsValue" class="field-input" type="number" min="0" max="${Math.max(0, (finiteNumber(fis.nodes) || 30) - 1)}" step="1" value="5" required></label><button class="button button-primary" type="submit">Hitung skor FIS</button></form><div class="fis-result"><div class="fis-score-line"><span>Skor kelayakan kandidat</span><strong id="fisCandidateScore">—</strong></div><p id="fisResultCaption" class="panel-caption">Ubah kondisi lalu hitung untuk melihat jalur inferensi.</p><div class="fis-visual-grid"><section class="fis-visual"><h3>Derajat keanggotaan input</h3><p>0 berarti tidak cocok, 1 berarti cocok penuh.</p><div class="chart-frame chart-frame-fis"><canvas id="fisDegreesChart" role="img" aria-label="Diagram batang derajat keanggotaan energi, jarak, dan jumlah tetangga"></canvas></div><div id="fisDegreesTable" class="table-wrap"></div></section><section class="fis-visual"><h3>Kurva output setelah aturan</h3><p>Garis berwarna adalah konsekuen yang dipotong; garis tebal adalah gabungannya.</p><div class="chart-frame chart-frame-fis"><canvas id="fisOutputChart" role="img" aria-label="Kurva output Mamdani setelah agregasi aturan dan posisi centroid"></canvas></div><div id="fisOutputTable" class="table-wrap"></div></section></div><h3 class="fis-active-heading">Aturan yang aktif</h3><div id="fisActiveRules" class="table-wrap"></div></div></div></article>
 
     <article class="panel"><div class="panel-heading"><div><h2 class="panel-title">Basis aturan Mamdani</h2><p class="panel-caption">Semua kombinasi energi × jarak × jumlah tetangga menghasilkan ${formatInteger(fis.rule_count)} aturan. Konsekuen di bawah diambil langsung dari FuzzyRuleBase pada server.</p></div></div><div id="fisRuleTable" class="table-wrap"></div></article>
   `;
@@ -829,6 +859,7 @@ function calculateFisCandidate() {
     { key: "variable", label: "Input" }, { key: "low", label: "Rendah / dekat / sedikit", render: formatDecimal },
     { key: "middle", label: "Sedang", render: formatDecimal }, { key: "high", label: "Tinggi / jauh / banyak", render: formatDecimal },
   ], Object.entries(degrees).map(([key, values]) => ({ variable: variableLabels[key], low: values[labels[key][0]], middle: values[labels[key][1]], high: values[labels[key][2]] })));
+  renderFisVisuals(degrees, labels, outputMembership, outputX, aggregate, activations, score);
   const activeRules = rules.filter((rule) => rule.strength > 0).sort((a, b) => b.strength - a.strength || a.index - b.index);
   $("#fisActiveRules").innerHTML = makeTable([
     { key: "index", label: "Aturan", render: (value) => `R${formatInteger(value)}` },
@@ -836,6 +867,90 @@ function calculateFisCandidate() {
     { key: "neighbors", label: "Tetangga" }, { key: "output", label: "Konsekuen" },
     { key: "strength", label: "Kekuatan MIN", render: formatDecimal },
   ], activeRules);
+}
+
+function renderFisVisuals(degrees, labels, outputMembership, outputX, aggregate, activations, score) {
+  const inputRows = [
+    { key: "energy", label: "Energi", names: labels.energy },
+    { key: "distance", label: "Jarak", names: labels.distance },
+    { key: "neighbors", label: "Tetangga", names: labels.neighbors },
+  ];
+  const degreeColors = ["#216e8a", "#b34d16", "#6c50a1"];
+  const degreeNames = ["Rendah · dekat · sedikit", "Sedang", "Tinggi · jauh · banyak"];
+  replaceChart("fisDegrees", "fisDegreesChart", {
+    type: "bar",
+    data: {
+      labels: inputRows.map((row) => row.label),
+      datasets: degreeNames.map((label, index) => ({
+        label,
+        data: inputRows.map((row) => degrees[row.key][row.names[index]]),
+        backgroundColor: degreeColors[index],
+        borderRadius: 3,
+        maxBarThickness: 16,
+      })),
+    },
+    options: {
+      ...chartOptions("Derajat"),
+      indexAxis: "y",
+      scales: {
+        x: { min: 0, max: 1, grid: { color: "#e5eae6" }, ticks: { color: "#53665f", stepSize: 0.25, font: { size: 12 } }, border: { display: false } },
+        y: { grid: { display: false }, ticks: { color: "#40534e", font: { size: 13 } }, border: { display: false } },
+      },
+      plugins: { ...chartOptions("Derajat").plugins, legend: { ...chartOptions("Derajat").plugins.legend, position: "bottom" } },
+    },
+  });
+
+  const outputColors = { Rendah: "#216e8a", Sedang: "#b34d16", Tinggi: "#6c50a1" };
+  const outputCurves = Object.entries(activations).map(([label, activation]) => ({
+    label: `Potongan ${label.toLowerCase()}`,
+    data: outputX.map((x) => ({ x, y: Math.min(activation, membershipDegree(outputMembership[label].shape, outputMembership[label].points, x)) })),
+    borderColor: outputColors[label],
+    backgroundColor: outputColors[label],
+    borderWidth: 1.5,
+    borderDash: [4, 3],
+    pointRadius: 0,
+    tension: 0,
+    fill: false,
+  }));
+  const maximumAggregate = Math.max(...aggregate, 0.01);
+  replaceChart("fisOutput", "fisOutputChart", {
+    type: "line",
+    data: {
+      datasets: [
+        ...outputCurves,
+        { label: "Agregasi MAX", data: outputX.map((x, index) => ({ x, y: aggregate[index] })), borderColor: "#176b55", backgroundColor: "rgba(23,107,85,.12)", borderWidth: 3, pointRadius: 0, tension: 0, fill: "origin", order: 1 },
+        { label: `Centroid ${formatDecimal(score)}`, data: [{ x: score, y: 0 }, { x: score, y: maximumAggregate }], borderColor: "#1b2930", backgroundColor: "#1b2930", borderWidth: 2, borderDash: [3, 3], pointRadius: 0, tension: 0, fill: false, order: 0 },
+      ],
+    },
+    options: {
+      ...chartOptions("Derajat keanggotaan"),
+      interaction: { mode: "nearest", intersect: false },
+      scales: {
+        x: { type: "linear", min: 0, max: 1, title: { display: true, text: "Skor keluaran", color: "#53665f", font: { size: 12 } }, grid: { display: false }, ticks: { color: "#53665f", maxTicksLimit: 6, font: { size: 12 }, callback: (value) => Number(value).toFixed(1) }, border: { display: false } },
+        y: { min: 0, max: 1, title: { display: true, text: "Derajat", color: "#53665f", font: { size: 12 } }, grid: { color: "#e5eae6" }, ticks: { color: "#53665f", stepSize: 0.25, font: { size: 12 } }, border: { display: false } },
+      },
+    },
+  });
+
+  const sampleRows = Array.from({ length: 11 }, (_, index) => {
+    const point = index * (outputX.length - 1) / 10;
+    const lowerIndex = Math.floor(point);
+    const upperIndex = Math.min(outputX.length - 1, Math.ceil(point));
+    const fraction = point - lowerIndex;
+    const aggregateValue = aggregate[lowerIndex] + (aggregate[upperIndex] - aggregate[lowerIndex]) * fraction;
+    return {
+      x: index / 10,
+      rendah: Math.min(activations.Rendah, membershipDegree(outputMembership.Rendah.shape, outputMembership.Rendah.points, index / 10)),
+      sedang: Math.min(activations.Sedang, membershipDegree(outputMembership.Sedang.shape, outputMembership.Sedang.points, index / 10)),
+      tinggi: Math.min(activations.Tinggi, membershipDegree(outputMembership.Tinggi.shape, outputMembership.Tinggi.points, index / 10)),
+      aggregate: aggregateValue,
+    };
+  });
+  $("#fisOutputTable").innerHTML = `<details class="chart-data-details"><summary>Lihat 11 sampel kurva</summary>${makeTable([
+    { key: "x", label: "Skor output" },
+    { key: "rendah", label: "Rendah" }, { key: "sedang", label: "Sedang" },
+    { key: "tinggi", label: "Tinggi" }, { key: "aggregate", label: "Agregasi MAX" },
+  ], sampleRows)}</details>`;
 }
 
 function updateDatasetDescription(dataset) {

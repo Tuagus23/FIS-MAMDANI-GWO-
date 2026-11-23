@@ -540,9 +540,32 @@ abbr[title] { text-decoration: none; }
 .fis-result .table-wrap { margin-top: 6px; }
 .fis-result .data-table { min-width: 540px; }
 .fis-workbench .button { justify-content: center; }
+.gwo-coordinate-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 22px; }
+.gwo-coordinate-group { min-width: 0; border-top: 2px solid #216e8a; padding-top: 11px; }
+.gwo-coordinate-distance { border-color: #b34d16; }
+.gwo-coordinate-neighbors { border-color: #6c50a1; }
+.gwo-coordinate-group h3 { color: #193832; font-size: 14px; font-weight: 650; }
+.gwo-coordinate-items { display: grid; gap: 10px; margin-top: 12px; }
+.gwo-coordinate-item { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 10px; }
+.gwo-coordinate-item > div { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; color: #53665f; font-size: 12px; font-variant-numeric: tabular-nums; }
+.gwo-coordinate-item strong { color: #193832; font-size: 13px; font-weight: 600; }
+.gwo-coordinate-track { display: block; height: 7px; overflow: hidden; border-radius: 999px; background: #edf1ef; }
+.gwo-coordinate-track i { display: block; height: 100%; border-radius: inherit; background: #216e8a; }
+.gwo-coordinate-distance .gwo-coordinate-track i { background: #b34d16; }
+.gwo-coordinate-neighbors .gwo-coordinate-track i { background: #6c50a1; }
+.fis-visual-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 19px; }
+.fis-visual { min-width: 0; }
+.fis-visual + .fis-visual { border-left: 1px solid #e5eae6; padding-left: 20px; }
+.fis-visual h3 { margin-top: 0; color: #193832; font-size: 14px; font-weight: 650; }
+.fis-visual > p { margin-top: 5px; color: #53665f; font-size: 13px; line-height: 1.5; }
+.chart-frame-fis { height: 190px; margin-top: 8px; }
+.fis-visual .data-table { min-width: 420px; font-size: 13px; }
+.fis-visual .data-table th, .fis-visual .data-table td { padding: 8px; }
+.fis-active-heading { margin-top: 22px !important; }
 @media (max-width: 900px) {
   .process-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fis-workbench { grid-template-columns: minmax(0, 1fr); }
+  .fis-workbench .data-table { min-width: 560px; }
 }
 @media (max-width: 600px) {
   .process-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -553,6 +576,10 @@ abbr[title] { text-decoration: none; }
   .process-flow li::before { grid-row: span 3; margin-bottom: 0; }
   .process-flow li > span, .process-flow li > strong, .process-flow li > p { grid-column: 2; }
   .process-select-label { min-width: 118px; }
+  .gwo-coordinate-grid { grid-template-columns: minmax(0, 1fr); gap: 17px; }
+  .fis-visual-grid { grid-template-columns: minmax(0, 1fr); gap: 19px; }
+  .fis-visual + .fis-visual { border-top: 1px solid #e5eae6; border-left: 0; padding-top: 18px; padding-left: 0; }
+  .chart-frame-fis { height: 205px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .process-page.is-entering { animation-name: process-page-fade; animation-duration: 200ms !important; }
