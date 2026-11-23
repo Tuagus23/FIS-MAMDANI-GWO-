@@ -203,13 +203,13 @@
             </div>
             <article class="panel min-w-0">
               <div class="panel-heading"><div>
-                  <h2 class="panel-title">Sebaran hasil setiap seed</h2></div>
+                  <h2 class="panel-title">Sebaran hasil per seed uji</h2></div>
                 <label class="sr-only" for="validationMetricSelect">Metrik sebaran</label>
                 <select id="validationMetricSelect" class="dataset-select validation-metric-select">
                   <option value="FND">FND</option><option value="HND">HND</option><option value="LND">LND</option><option value="PDR_pct">PDR</option>
                 </select>
               </div>
-              <p class="panel-caption">Titik FUZZY dan GWO dipisahkan sedikit pada setiap seed agar nilainya mudah dibandingkan. Segitiga menandai milestone yang belum tercapai pada batas horizon.</p>
+              <p class="panel-caption">Seed pada grafik dan tabel adalah seed uji, bukan seed yang dipakai saat kalibrasi. Titik FUZZY dan GWO dipisahkan sedikit agar nilainya mudah dibandingkan; segitiga menandai milestone yang belum tercapai pada batas horizon.</p>
               <div class="seed-analysis-grid">
                 <div>
                   <div class="chart-frame chart-frame-seed"><canvas id="validationSeedsChart" role="img" aria-label="Sebaran metrik validasi per seed"></canvas></div>
@@ -253,7 +253,7 @@
                 </div>
                 <div id="simulationNotice" class="notice hidden" role="status" aria-live="polite"></div>
                 <button id="runSimulation" class="button button-primary w-full justify-center" type="submit"><span class="button-label">Jalankan simulasi</span><span class="button-spinner hidden" aria-hidden="true"></span></button>
-                <p class="form-footnote">GWO menggunakan fungsi keanggotaan hasil optimasi yang tersimpan. Optimizer tidak dijalankan ulang.</p>
+                <p class="form-footnote">Model GWO simulasi mengikuti dataset terpilih di bagian atas. Seed dan parameter skenario tercatat di ringkasan hasil. Optimizer tidak dijalankan ulang.</p>
               </form>
               <article class="panel min-w-0">
                 <div class="panel-heading"><div>

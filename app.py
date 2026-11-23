@@ -27,26 +27,35 @@ from wsn_gwo_v2.wsn import NetworkSimulator, create_topology
 
 ROOT = Path(__file__).resolve().parent
 WEB_ROOT = ROOT / "web"
-GWO_MODEL = ROOT / "results" / "membership_gwo.json"
 SIMULATION_LOCK = threading.Lock()
 
 DATASETS = {
     "results": {
         "label": "Eksperimen utama",
-        "description": "Ringkasan eksperimen FUZZY, LEACH, dan GWO.",
+        "description": "Ringkasan FUZZY, LEACH, dan GWO beserta validasi model pada 10 seed uji.",
         "path": ROOT / "results",
     },
     "hasil_optimasi_10seed": {
         "label": "Kalibrasi 10 seed",
         "description": "Model GWO dilatih pada sepuluh seed dan divalidasi pada topologi terpisah.",
-        "paths": [ROOT / "hasil_optimasi_10seed", ROOT / "validasi_results_10seed"],
+        "path": ROOT / "hasil_optimasi_10seed",
     },
     "optimasi_seed42_weight030": {
         "label": "Eksperimen seed 42",
-        "description": "Seed 42 ikut dalam latihan GWO, jadi bukan pengujian independen.",
+        "description": "Model GWO dikalibrasi dengan seed 42. Menu validasi menampilkan 10 seed uji yang terpisah.",
         "path": ROOT / "optimasi_seed42_weight030",
     },
 }
+
+
+def _dataset_folder(dataset_id: str) -> Path:
+    dataset = DATASETS.get(dataset_id)
+    if not dataset:
+        raise ValueError("Dataset tidak dikenal.")
+    folder = dataset["path"]
+    if not folder.is_dir():
+        raise ValueError(f"Folder data untuk {dataset['label']} tidak ditemukan.")
+    return folder
 
 
 def read_csv_rows(path: Path) -> list[dict]:
@@ -144,10 +153,7 @@ def _membership_ranges(membership: dict, baseline: dict, nodes: int) -> dict:
 
 def dashboard_data(dataset_id: str) -> dict:
     dataset = DATASETS[dataset_id]
-    folder = next(
-        (path for path in dataset.get("paths", [dataset.get("path")]) if path and path.is_dir()),
-        dataset.get("paths", [dataset.get("path")])[0],
-    )
+    folder = _dataset_folder(dataset_id)
     history = read_csv_rows(folder / "round_metrics.csv")
     summary = read_csv_rows(folder / "protocol_summary.csv")
     validation = read_csv_rows(folder / "validation_summary.csv")
@@ -158,7 +164,7 @@ def dashboard_data(dataset_id: str) -> dict:
             row["GWO_wins"], row["FUZZY_wins"], row["ties"] = _validation_counts(
                 validation_rows, row["metric"], horizon
             )
-    membership = read_json(folder / "membership_gwo.json") or read_json(GWO_MODEL)
+    membership = read_json(folder / "membership_gwo.json")
     membership = membership or {}
     baseline = MembershipSet.default().to_dict()
     return {
@@ -187,6 +193,10 @@ def dashboard_data(dataset_id: str) -> dict:
 
 
 def run_simulation(payload: dict) -> dict:
+    dataset_id = payload.get("dataset_id", "results")
+    if not isinstance(dataset_id, str) or dataset_id not in DATASETS:
+        raise ValueError("Pilih dataset yang valid sebelum menjalankan simulasi.")
+
     try:
         nodes = int(payload.get("nodes", 30))
         rounds = int(payload.get("rounds", 1600))
@@ -211,7 +221,10 @@ def run_simulation(payload: dict) -> dict:
         cluster_head_count=head_count,
     )
     topology = create_topology(config, seed)
-    membership = MembershipSet.load(GWO_MODEL)
+    membership_path = _dataset_folder(dataset_id) / "membership_gwo.json"
+    if not membership_path.is_file():
+        raise ValueError(f"Model GWO untuk {DATASETS[dataset_id]['label']} tidak ditemukan.")
+    membership = MembershipSet.load(membership_path)
     summaries = []
     history = []
 
@@ -231,6 +244,8 @@ def run_simulation(payload: dict) -> dict:
             "rounds": rounds,
             "seed": seed,
             "cluster_head_count": head_count,
+            "dataset_id": dataset_id,
+            "dataset_label": DATASETS[dataset_id]["label"],
         },
         "summary": summaries,
         "history": history,

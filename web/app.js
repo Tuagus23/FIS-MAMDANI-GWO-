@@ -10,7 +10,7 @@ const viewText = {
   },
   validasi: {
     title: "Validasi model",
-    description: "Membaca performa model FUZZY dan GWO pada topologi yang tidak digunakan dalam optimasi.",
+    description: "Membandingkan model FUZZY dan GWO pada seed uji yang terpisah dari seed kalibrasi.",
     breadcrumb: "Validasi model",
   },
   membership: {
@@ -435,7 +435,7 @@ function renderValidationSeedsChart(rows, metric) {
   };
   options.scales.x = {
     type: "linear", min: -0.5, max: seedRows.length - 0.5,
-    title: { display: true, text: "Seed topologi", color: axisColor, font: { size: 13 } },
+    title: { display: true, text: "Seed uji", color: axisColor, font: { size: 13 } },
     grid: { display: false },
     ticks: { color: axisColor, stepSize: 1, maxTicksLimit: seedRows.length, font: { size: 13 }, callback(value) { return seedRows[Math.round(value)]?.seed ?? ""; } },
     border: { display: false },
@@ -459,9 +459,9 @@ function renderValidationSeedTable(rows, metric) {
     if (number !== null) return metric === "PDR_pct" ? formatPercent(number) : formatInteger(number);
     return metric === "PDR_pct" ? "—" : `> ${formatInteger(horizon)} (belum tercapai)`;
   };
-  $("#validationSeedTableTitle").textContent = `Nilai tiap seed · ${label}`;
+  $("#validationSeedTableTitle").textContent = `Nilai seed uji · ${label}`;
   $("#validationSeedDataTable").innerHTML = makeTable([
-    { key: "seed", label: "Seed topologi", markup: '<abbr title="Angka awal acak untuk mengulang susunan node">Seed topologi</abbr>' },
+    { key: "seed", label: "Seed uji", markup: '<abbr title="Seed terpisah yang dipakai untuk menguji model">Seed uji</abbr>' },
     { key: `FUZZY_${metric}`, label: `FUZZY · ${label}`, render: formatSeedValue },
     { key: `GWO_${metric}`, label: `GWO · ${label}`, render: formatSeedValue },
   ], [...rows].sort((a, b) => a.seed - b.seed));
@@ -613,7 +613,7 @@ function renderSimulation(result) {
   state.simulation = result;
   $("#simulationPlaceholder").classList.add("hidden");
   $("#simulationResults").classList.remove("hidden");
-  $("#simulationStatus").textContent = `${numberFormat.format(result.config.nodes)} node · ${numberFormat.format(result.config.rounds)} ronde`;
+  $("#simulationStatus").textContent = `${result.config.dataset_label || "Dataset"} · seed ${numberFormat.format(result.config.seed)}`;
   const bestLifetime = bestMetricRows(result.summary, "lnd", true);
   const bestPdr = bestMetricRows(result.summary, "pdr_total_pct");
   $("#simulationMetrics").innerHTML = [
@@ -741,6 +741,7 @@ function bindEvents() {
       rounds: Number($("#roundsInput").value),
       seed: Number($("#seedInput").value),
       cluster_head_count: Number($("#headsInput").value),
+      dataset_id: state.datasetId,
     };
     if (!event.currentTarget.reportValidity()) return;
     setSimulationBusy(true);
