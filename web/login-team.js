@@ -16,7 +16,7 @@ if (slides.length && stage) {
   function startRotation() {
     stopRotation();
     if (prefersReducedMotion.matches || document.hidden || stage.matches(":hover") || stage.contains(document.activeElement)) return;
-    rotationTimer = window.setInterval(() => transitionTo((currentIndex + 1) % slides.length), 6800);
+    rotationTimer = window.setInterval(() => transitionTo((currentIndex + 1) % slides.length), 8000);
   }
 
   async function transitionTo(nextIndex) {
@@ -29,11 +29,11 @@ if (slides.length && stage) {
     const easeOut = [0.23, 1, 0.32, 1];
     const enter = prefersReducedMotion.matches
       ? { opacity: [0, 1] }
-      : { opacity: [0, 1], y: [6, 0] };
+      : { opacity: [0, 1], x: [8, 0] };
     const leave = prefersReducedMotion.matches
       ? { opacity: 0 }
-      : { opacity: 0, y: 6 };
-    const duration = prefersReducedMotion.matches ? 0.16 : 0.22;
+      : { opacity: 0, x: -8 };
+    const duration = prefersReducedMotion.matches ? 0.16 : 0.26;
     const outgoingAnimation = animate(outgoing, leave, { duration, ease: easeOut });
     const incomingAnimation = animate(incoming, enter, { duration, ease: easeOut });
 
