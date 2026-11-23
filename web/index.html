@@ -126,7 +126,7 @@
               <p id="pageDescription" class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Membandingkan umur jaringan dan keberhasilan pengiriman paket pada setiap protokol.</p>
               <p id="datasetDescription" class="dataset-description mt-1 max-w-2xl text-sm leading-6 text-slate-500"></p>
             </div>
-            <button id="downloadPrimary" class="button button-secondary inline-flex" type="button"><span class="hidden sm:inline">Unduh CSV</span><span class="sm:hidden">CSV</span></button>
+            <button id="downloadPrimary" class="button button-secondary inline-flex" type="button" hidden disabled aria-label="Unduh ringkasan sebagai CSV"><span class="hidden sm:inline">Unduh ringkasan CSV</span><span class="sm:hidden">CSV ringkasan</span></button>
           </div>
 
           <section id="view-hasil" class="view-section space-y-5" aria-labelledby="pageTitle">
@@ -228,7 +228,7 @@
             </article>
             <article class="panel overflow-hidden">
               <div class="panel-heading"><div>
-                  <h2 class="panel-title">Nilai rata-rata dan jumlah kemenangan</h2></div><button id="downloadValidation" class="button button-secondary" type="button">Unduh validasi</button></div>
+                  <h2 class="panel-title">Nilai rata-rata dan jumlah kemenangan</h2></div><button id="downloadValidation" class="button button-secondary" type="button" disabled>Unduh validasi CSV</button></div>
               <div id="validationTable" class="table-wrap"></div>
               <p class="table-footnote">Jumlah seed pada dataset: <span id="validationSeedCount">—</span>. Nilai rata-rata bertanda * memakai batas horizon untuk milestone yang belum tercapai. LND belum tercapai: FUZZY <span id="fuzzyCensoredCount">0</span>, GWO <span id="gwoCensoredCount">0</span> seed.</p>
             </article>
@@ -242,7 +242,7 @@
             </div>
             <div id="membershipGrid" class="grid grid-cols-1 gap-5 xl:grid-cols-2"></div>
             <div class="info-strip"><span class="info-strip-mark" aria-hidden="true">i</span><p>Panel kiri menampilkan MF awal, sedangkan panel kanan menampilkan hasil optimasi GWO. Warna kurva membedakan kategori rendah, sedang, dan tinggi. Garis putus-putus menandai MF awal; garis solid menandai hasil GWO. Skor kelayakan tetap memakai MF awal karena fungsi output tidak dioptimalkan.</p></div>
-            <button id="downloadMembership" class="button button-secondary" type="button">Unduh parameter MF (JSON)</button>
+            <button id="downloadMembership" class="button button-secondary" type="button" disabled>Unduh parameter MF (JSON)</button>
           </section>
 
           <section id="view-anggota" class="view-section hidden space-y-5" aria-labelledby="pageTitle">
@@ -301,7 +301,7 @@
                     <div id="simulationDataTable" class="table-wrap"></div>
                   </details>
                   <div id="simulationTable" class="table-wrap"></div>
-                  <button id="downloadSimulation" class="button button-secondary" type="button">Unduh metrik per ronde</button>
+                  <button id="downloadSimulation" class="button button-secondary" type="button" disabled>Unduh node hidup per ronde CSV</button>
                 </div>
               </article>
             </div>

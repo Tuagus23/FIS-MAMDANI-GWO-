@@ -1,4 +1,4 @@
-const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, charts: {}, view: "hasil", authClient: null };
+const state = { datasets: [], datasetId: "results", dashboard: null, simulation: null, charts: {}, view: "hasil", authClient: null, dashboardRequestId: 0 };
 const inviteType = new URLSearchParams(window.location.hash.slice(1)).get("type")
   || new URLSearchParams(window.location.search).get("type");
 
@@ -158,7 +158,7 @@ function setView(view, { updateHash = false } = {}) {
   $("#pageTitle").textContent = copy.title;
   $("#pageDescription").textContent = copy.description;
   $("#breadcrumb").innerHTML = `Ruang analisis <span class="mx-1 text-slate-300">/</span> <span class="text-ink">${escapeHtml(copy.breadcrumb)}</span>`;
-  $("#downloadPrimary").classList.toggle("hidden", view !== "hasil");
+  $("#downloadPrimary").toggleAttribute("hidden", view !== "hasil");
   window.dashboardMotion?.scrollToTop();
   if (!window.dashboardMotion) window.scrollTo({ top: 0, behavior: "auto" });
   window.dashboardMotion?.refresh();
@@ -580,13 +580,57 @@ function updateDatasetDescription(dataset) {
   $("#datasetDescription").textContent = dataset?.description || "Data eksperimen yang dipilih.";
 }
 
+function updateDownloadButtons() {
+  const dashboardIsCurrent = state.dashboard?.dataset?.id === state.datasetId;
+  $("#downloadPrimary").disabled = !dashboardIsCurrent || !state.dashboard?.summary?.length;
+  $("#downloadValidation").disabled = !dashboardIsCurrent || !state.dashboard?.validation?.length;
+  $("#downloadMembership").disabled = !dashboardIsCurrent || !Object.keys(state.dashboard?.membership || {}).length;
+  $("#downloadSimulation").disabled = !state.simulation
+    || state.simulation.config?.dataset_id !== state.datasetId
+    || !state.simulation.history?.length;
+}
+
+function clearDashboardVisuals() {
+  Object.values(state.charts).forEach((chart) => chart.destroy());
+  state.charts = {};
+  renderSummary([]);
+  renderHistoryChart([]);
+  renderValidation([]);
+  renderMembershipCharts(null, null, null);
+  $("#historyDataDetails").dataset.loaded = "false";
+  $("#historyDataTable").innerHTML = "";
+}
+
+function clearSimulationResult() {
+  state.simulation = null;
+  state.charts.simulation?.destroy();
+  delete state.charts.simulation;
+  $("#simulationResults").classList.add("hidden");
+  $("#simulationPlaceholder").classList.remove("hidden");
+  $("#simulationMetrics").innerHTML = "";
+  $("#simulationTable").innerHTML = "";
+  $("#simulationDataDetails").dataset.loaded = "false";
+  $("#simulationDataTable").innerHTML = "";
+  $("#simulationStatus").textContent = "menunggu simulasi";
+  updateDownloadButtons();
+}
+
 async function loadDashboard(datasetId = state.datasetId) {
-  state.datasetId = datasetId;
+  const requestId = ++state.dashboardRequestId;
+  const selectedDataset = String(datasetId);
+  if (selectedDataset !== state.datasetId) clearSimulationResult();
+  state.datasetId = selectedDataset;
+  state.dashboard = null;
+  updateDownloadButtons();
   setError("");
   setLoading(true);
+  updateDatasetDescription({ description: "Memuat data untuk dataset yang dipilih…" });
+  clearDashboardVisuals();
   try {
-    const response = await authenticatedFetch(`/api/dashboard?dataset=${encodeURIComponent(datasetId)}`, { headers: { Accept: "application/json" } });
+    const response = await authenticatedFetch(`/api/dashboard?dataset=${encodeURIComponent(selectedDataset)}`, { headers: { Accept: "application/json" } });
     const data = await readApiResponse(response, "Data eksperimen tidak dapat dimuat.");
+    if (requestId !== state.dashboardRequestId) return;
+    if (data.dataset?.id !== selectedDataset) throw new Error("Server mengirim data untuk dataset yang berbeda. Silakan muat ulang.");
     state.dashboard = data;
     updateDatasetDescription(data.dataset);
     renderSummary(data.summary);
@@ -595,11 +639,17 @@ async function loadDashboard(datasetId = state.datasetId) {
     renderMembershipCharts(data.membership, data.membership_baseline, data.membership_ranges);
     $("#historyDataDetails").dataset.loaded = "false";
     $("#historyDataTable").innerHTML = "";
+    setConnectionStatus("Terhubung");
   } catch (error) {
-    setConnectionStatus("Data tidak tersedia", false);
-    setError(requestErrorMessage(error, "Data eksperimen tidak dapat dimuat."));
+    if (requestId === state.dashboardRequestId) {
+      setConnectionStatus("Data tidak tersedia", false);
+      setError(requestErrorMessage(error, "Data eksperimen tidak dapat dimuat."));
+    }
   } finally {
-    setLoading(false);
+    if (requestId === state.dashboardRequestId) {
+      setLoading(false);
+      updateDownloadButtons();
+    }
   }
 }
 
@@ -636,6 +686,7 @@ function renderSimulation(result) {
   $("#simulationDataDetails").dataset.loaded = "false";
   $("#simulationDataTable").innerHTML = "";
   renderSimulationChart(result.history);
+  updateDownloadButtons();
   window.dashboardMotion?.refresh();
 }
 
@@ -677,9 +728,12 @@ function renderHistoryTable(rows) {
 
 function toCsv(rows) {
   if (!rows?.length) return "";
-  const headers = Object.keys(rows[0]);
-  const quote = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  return [headers.map(quote).join(","), ...rows.map((row) => headers.map((key) => quote(row[key])).join(","))].join("\r\n");
+  const quote = (value) => {
+    let text = String(value ?? "");
+    if (typeof value === "string" && /^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+  return `\uFEFF${rows.map((row) => row.map(quote).join(",")).join("\r\n")}`;
 }
 
 function downloadFile(filename, content, mimeType) {
@@ -691,20 +745,108 @@ function downloadFile(filename, content, mimeType) {
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function datasetFileSlug() {
+  return String(state.dashboard?.dataset?.id || state.datasetId || "dataset")
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
+function downloadCsv(filename, headers, rows, emptyMessage) {
+  if (!rows.length) {
+    setError(emptyMessage);
+    return;
+  }
+  const content = toCsv([headers, ...rows]);
+  if (!content) {
+    setError(emptyMessage);
+    return;
+  }
+  setError("");
+  downloadFile(filename, content, "text/csv;charset=utf-8");
+}
+
+function dashboardDataIsCurrent(view) {
+  return state.view === view && state.dashboard?.dataset?.id === state.datasetId;
 }
 
 function downloadSummary() {
-  downloadFile("protocol_summary.csv", toCsv(state.dashboard?.summary || []), "text/csv;charset=utf-8");
+  if (!dashboardDataIsCurrent("hasil")) return;
+  const horizon = state.dashboard.horizon;
+  const dataset = state.dashboard.dataset.label;
+  const exportMilestone = (value, row) => finiteNumber(value) ?? (value === null ? formatMilestone(value, row, horizon) : "");
+  const rows = (state.dashboard.summary || []).map((row) => [
+    dataset,
+    row.protocol,
+    exportMilestone(row.fnd, row),
+    exportMilestone(row.hnd, row),
+    exportMilestone(row.lnd, row),
+    finiteNumber(row.pdr_total_pct),
+    finiteNumber(row.last_round),
+  ]);
+  downloadCsv(`ringkasan_protokol_${datasetFileSlug()}.csv`, [
+    "Dataset", "Protokol", "FND (ronde)", "HND (ronde)", "LND (ronde)", "PDR (%)", "Ronde akhir",
+  ], rows, "Ringkasan untuk dataset ini belum tersedia.");
 }
 
 function downloadValidation() {
-  downloadFile("validation_summary.csv", toCsv(state.dashboard?.validation || []), "text/csv;charset=utf-8");
+  if (!dashboardDataIsCurrent("validasi")) return;
+  const validationRows = state.dashboard.validation_rows || [];
+  const metricLabels = { FND: "FND", HND: "HND", LND: "LND", PDR_pct: "PDR", lifetime_index: "Indeks umur" };
+  const rows = (state.dashboard.validation || [])
+    .filter((row) => Object.prototype.hasOwnProperty.call(metricLabels, row.metric))
+    .map((row) => {
+      const censoredCount = (protocol) => row.metric === "lifetime_index"
+        ? validationRows.filter((seed) => ["FND", "HND", "LND"].some((metric) => seed[`${protocol}_${metric}`] === null)).length
+        : censorCount(validationRows, protocol, row.metric);
+      return [
+        state.dashboard.dataset.label,
+        metricLabels[row.metric],
+        finiteNumber(row.FUZZY_mean),
+        finiteNumber(row.GWO_mean),
+        finiteNumber(row.mean_delta_GWO_minus_FUZZY),
+        finiteNumber(row.GWO_wins),
+        finiteNumber(row.FUZZY_wins),
+        finiteNumber(row.ties),
+        finiteNumber(row.seed_count) ?? validationRows.length,
+        censoredCount("FUZZY"),
+        censoredCount("GWO"),
+      ];
+    });
+  downloadCsv(`validasi_${datasetFileSlug()}.csv`, [
+    "Dataset", "Metrik", "FUZZY rata-rata", "GWO rata-rata", "Δ GWO − FUZZY", "Menang GWO", "Menang FUZZY", "Seri", "Jumlah seed", "Seed tersensor FUZZY", "Seed tersensor GWO",
+  ], rows, "Data validasi untuk dataset ini belum tersedia.");
 }
 
 function downloadMembership() {
   const value = state.dashboard?.membership;
-  if (value) downloadFile("membership_gwo.json", JSON.stringify(value, null, 2), "application/json;charset=utf-8");
+  if (dashboardDataIsCurrent("membership") && value) {
+    downloadFile(`parameter_mf_${datasetFileSlug()}.json`, JSON.stringify(value, null, 2), "application/json;charset=utf-8");
+  }
+}
+
+function downloadSimulation() {
+  const result = state.simulation;
+  if (state.view !== "simulasi" || result?.config?.dataset_id !== state.datasetId) return;
+  const config = result.config;
+  const dataset = state.dashboard?.dataset?.label || config.dataset_label || config.dataset_id;
+  const rows = (result.history || []).map((row) => [
+    dataset,
+    finiteNumber(config.seed),
+    finiteNumber(config.nodes),
+    finiteNumber(config.cluster_head_count),
+    finiteNumber(config.rounds),
+    finiteNumber(row.round_number),
+    row.protocol,
+    finiteNumber(row.alive_nodes),
+  ]);
+  downloadCsv(`hasil_simulasi_${datasetFileSlug()}_seed-${config.seed}.csv`, [
+    "Dataset", "Seed topologi", "Jumlah node", "Jumlah cluster head", "Horizon ronde", "Ronde", "Protokol", "Node hidup",
+  ], rows, "Metrik simulasi belum tersedia. Jalankan simulasi terlebih dahulu.");
 }
 
 function bindEvents() {
@@ -718,9 +860,7 @@ function bindEvents() {
   $("#downloadPrimary").addEventListener("click", downloadSummary);
   $("#downloadValidation").addEventListener("click", downloadValidation);
   $("#downloadMembership").addEventListener("click", downloadMembership);
-  $("#downloadSimulation").addEventListener("click", () => {
-    downloadFile("round_metrics.csv", toCsv(state.simulation?.history || []), "text/csv;charset=utf-8");
-  });
+  $("#downloadSimulation").addEventListener("click", downloadSimulation);
   window.addEventListener("hashchange", () => {
     const view = location.hash.slice(1);
     setView(viewText[view] ? view : "hasil");
@@ -757,6 +897,7 @@ function bindEvents() {
         body: JSON.stringify(payload),
       });
       const result = await readApiResponse(response, "Simulasi tidak dapat dijalankan.");
+      if (payload.dataset_id !== state.datasetId || result.config?.dataset_id !== payload.dataset_id) return;
       renderSimulation(result);
       $("#simulationNotice").textContent = "Simulasi selesai. Anda dapat mengunduh metrik per ronde.";
       $("#simulationNotice").classList.remove("hidden");
@@ -812,6 +953,7 @@ async function start() {
     $("#datasetSelect").innerHTML = state.datasets.map((dataset) => `<option value="${escapeHtml(dataset.id)}">${escapeHtml(dataset.label)}</option>`).join("");
     $("#datasetSelect").value = state.datasetId;
     bindEvents();
+    updateDownloadButtons();
     const route = location.hash.slice(1);
     const initialView = viewText[route] ? route : "hasil";
     if (!viewText[route]) history.replaceState(null, "", `#${initialView}`);

@@ -80,11 +80,12 @@ button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible
 .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
 .button { display: inline-flex; min-height: 40px; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 8px; padding: 8px 13px; font-size: 14px; font-weight: 600; transition: background-color .15s ease, border-color .15s ease, transform .15s ease; }
 .button:active { transform: translateY(1px); }
-.button:disabled { cursor: wait; opacity: .72; }
+.button:disabled { cursor: not-allowed; opacity: .58; }
 .button-primary { background: var(--green); color: white; }
 .button-primary:hover:not(:disabled) { background: #1e665c; }
 .button-secondary { border-color: #dce5df; background: white; color: #35504a; }
 .button-secondary:hover:not(:disabled) { border-color: #b8cdc2; background: #f8faf8; }
+#downloadPrimary[hidden], .result-placeholder.hidden { display: none; }
 .button-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; animation: spin .75s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
