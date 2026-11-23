@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/tailwind.css" />
     <link rel="stylesheet" href="/app.css" />
     <script src="/auth-client.js" defer></script>
+    <script src="/login-team.bundle.js" defer></script>
     <script src="/login.js" defer></script>
   </head>
   <body class="login-page">
@@ -40,6 +41,39 @@
             <span><i class="protocol-dot gwo" aria-hidden="true"></i>GWO</span>
           </div>
         </div>
+
+        <aside class="login-team" aria-labelledby="loginTeamTitle">
+          <div class="login-team-heading">
+            <div><p class="login-team-kicker">Kelompok 5 · MKBL</p><h2 id="loginTeamTitle">Tim di balik analisis</h2></div>
+            <span>4 anggota</span>
+          </div>
+          <div id="loginTeamStage" class="login-team-stage" role="group" aria-roledescription="carousel" aria-label="Anggota kelompok" aria-live="off">
+            <article class="login-team-slide is-current" data-team-slide role="group" aria-roledescription="slide" aria-label="1 dari 4">
+              <img src="/images/team/putu-agus-putra-darmawan.png" width="112" height="124" alt="Foto I Putu Agus Putra Darmawan" fetchpriority="high" />
+              <div><p class="login-team-role">Web Dev &amp; GWO Logic</p><h3>I Putu Agus Putra Darmawan</h3><p class="login-team-nim">NIM 2308561040</p></div>
+            </article>
+            <article class="login-team-slide" data-team-slide role="group" aria-roledescription="slide" aria-label="2 dari 4" hidden>
+              <img src="/images/team/dewa-putu-adrian-paramarta.png" width="112" height="124" alt="Foto Dewa Putu Adrian Paramarta" loading="lazy" />
+              <div><p class="login-team-role">FIS Mamdani System</p><h3>Dewa Putu Adrian Paramarta</h3><p class="login-team-nim">NIM 2308561134</p></div>
+            </article>
+            <article class="login-team-slide" data-team-slide role="group" aria-roledescription="slide" aria-label="3 dari 4" hidden>
+              <img src="/images/team/gede-rama-yasa-mahendra.png" width="112" height="124" alt="Foto I Gede Rama Yasa Mahendra" loading="lazy" />
+              <div><p class="login-team-role">Project Manager · Ketua kelompok</p><h3>I Gede Rama Yasa Mahendra</h3><p class="login-team-nim">NIM 2308561016</p></div>
+            </article>
+            <article class="login-team-slide" data-team-slide role="group" aria-roledescription="slide" aria-label="4 dari 4" hidden>
+              <img src="/images/team/aa-jaya-kesuma-wardana.png" width="112" height="124" alt="Foto A.A. Jaya Kesuma Wardana" loading="lazy" />
+              <div><p class="login-team-role">FIS Mamdani System</p><h3>A.A. Jaya Kesuma Wardana</h3><p class="login-team-nim">NIM 2308561124</p></div>
+            </article>
+          </div>
+          <div class="login-team-controls">
+            <span id="loginTeamProgress" aria-live="off">01 <i>/</i> 04</span>
+            <div>
+              <button id="loginTeamPrevious" type="button" aria-label="Tampilkan anggota sebelumnya"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m12.5 4.5-5.5 5.5 5.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button id="loginTeamPause" type="button" aria-label="Jeda rotasi otomatis" aria-pressed="false">Jeda</button>
+              <button id="loginTeamNext" type="button" aria-label="Tampilkan anggota berikutnya"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m7.5 4.5 5.5 5.5-5.5 5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        </aside>
 
         <aside class="login-qr" aria-labelledby="loginQrTitle">
           <div class="login-qr-copy">

@@ -5,7 +5,7 @@ import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const cardSelector = ".panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric";
+const cardSelector = ".panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric, .member-card";
 const revealedElements = new Set();
 const activeAnimations = new Map();
 let animationEvents;
@@ -60,7 +60,7 @@ function visibleRevealTargets() {
   if (!activeView) return [];
   return [
     document.querySelector(".page-heading"),
-    ...activeView.querySelectorAll(".panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric, .metric-glossary, .info-strip"),
+    ...activeView.querySelectorAll(".panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric, .metric-glossary, .info-strip, .member-card"),
   ].filter((element) => element && !element.closest(".hidden"));
 }
 

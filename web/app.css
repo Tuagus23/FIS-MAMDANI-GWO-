@@ -306,12 +306,61 @@ abbr[title] { text-decoration: none; }
 .auth-gate.hidden { display: none; }
 .chart-data-details .table-wrap, .metric-glossary .metric-guide { max-height: 360px; overflow: auto; }
 .motion-ready .motion-reveal { translate: 0 var(--motion-reveal-y, 0px); }
-.motion-ready :is(.panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric) { transform-origin: center; }
+.motion-ready :is(.panel, .metric-card, .membership-card, .seed-table-panel, .sim-metric, .member-card) { transform-origin: center; }
+
+/* Project team */
+.team-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.team-eyebrow { color: #397468; font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.team-intro .panel-title { margin-top: 7px; font-size: 21px; letter-spacing: -.025em; }
+.team-count { flex: 0 0 auto; border: 1px solid #dce8e0; border-radius: 999px; padding: 8px 13px; background: #f4f8f5; color: #355d53; font-size: 13px; font-weight: 650; }
+.team-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.member-card { min-width: 0; overflow: hidden; border: 1px solid #e0e8e2; border-radius: 13px; background: #fff; box-shadow: 0 3px 12px rgba(20,45,38,.035); transition: border-color .2s ease, box-shadow .2s ease; }
+.member-card:hover { border-color: #c5d8cc; box-shadow: 0 12px 28px rgba(20,45,38,.09); }
+.member-card.is-lead { border-color: #c6d9cf; }
+.member-photo-wrap { position: relative; overflow: hidden; aspect-ratio: 4 / 5; background: #e9eeea; }
+.member-photo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 24%; transition: transform .45s cubic-bezier(.2,.7,.2,1); }
+.member-card:hover .member-photo { transform: scale(1.035); }
+.member-number { position: absolute; top: 12px; left: 12px; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid rgba(255,255,255,.7); border-radius: 50%; background: rgba(25,56,50,.82); color: #fff; font-size: 12px; font-weight: 650; backdrop-filter: blur(8px); }
+.member-card-body { padding: 17px 17px 18px; }
+.member-nim { color: #60736b; font-size: 13px; font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: .025em; }
+.member-card-body h3 { min-height: 48px; margin-top: 7px; color: #193832; font-size: 17px; font-weight: 650; letter-spacing: -.02em; line-height: 1.4; }
+.member-role-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 12px; }
+.member-role { display: inline-flex; width: fit-content; margin-top: 12px; border: 1px solid #d5e5db; border-radius: 999px; padding: 6px 9px; background: #f0f6f2; color: #285d50; font-size: 12px; font-weight: 650; line-height: 1.35; }
+.member-role-row .member-role { margin-top: 0; }
+.member-lead-badge { border: 1px solid #f0d8a6; border-radius: 999px; padding: 6px 9px; background: #fff8e9; color: #775516; font-size: 12px; font-weight: 650; line-height: 1.35; }
+.member-contribution { margin-top: 12px; color: #53665f; font-size: 14px; line-height: 1.55; }
+
+/* Login team carousel */
+.login-team { width: min(100%, 470px); align-self: center; border: 1px solid rgba(255,255,255,.18); border-radius: 14px; padding: 16px 17px 12px; background: rgba(255,255,255,.055); }
+.login-team-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.login-team-kicker { color: #b6d8ca; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.login-team-heading h2 { margin-top: 4px; color: #fff; font-size: 16px; font-weight: 650; letter-spacing: -.015em; }
+.login-team-heading > span { flex: 0 0 auto; margin-top: 3px; color: #d5e3dc; font-size: 12px; }
+.login-team-stage { position: relative; min-height: 116px; margin-top: 12px; }
+.login-team-slide { position: absolute; inset: 0; display: grid; min-height: 116px; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 15px; }
+.login-team-slide[hidden] { display: none; }
+.login-team-slide img { display: block; width: 88px; height: 106px; border: 1px solid rgba(255,255,255,.28); border-radius: 9px; object-fit: cover; object-position: center 22%; background: rgba(255,255,255,.12); }
+.login-team-role { color: #b6d8ca; font-size: 12px; font-weight: 650; line-height: 1.4; }
+.login-team-slide h3 { margin-top: 6px; color: #fff; font-size: 16px; font-weight: 650; letter-spacing: -.015em; line-height: 1.3; text-wrap: balance; }
+.login-team-nim { margin-top: 6px; color: #d5e3dc; font-size: 13px; font-variant-numeric: tabular-nums; }
+.login-team-controls { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,.13); margin-top: 11px; padding-top: 9px; color: #d5e3dc; font-size: 12px; font-variant-numeric: tabular-nums; }
+.login-team-controls > span i { margin: 0 4px; color: #8fa99e; font-style: normal; }
+.login-team-controls > div { display: flex; align-items: center; gap: 5px; }
+.login-team-controls button { display: inline-grid; min-width: 34px; min-height: 32px; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; padding: 4px 8px; background: rgba(255,255,255,.06); color: #fff; font-size: 12px; transition: background-color .16s ease, border-color .16s ease; }
+.login-team-controls button:hover:not(:disabled) { border-color: rgba(255,255,255,.42); background: rgba(255,255,255,.14); }
+.login-team-controls button:disabled { cursor: default; opacity: .62; }
+.login-team-controls button svg { width: 17px; height: 17px; }
+.login-team-controls button:focus-visible { outline-color: #c4e4d6; }
+
 @media (max-width: 639px) {
   .membership-comparison-grid { grid-template-columns: minmax(0, 1fr); }
   .metric-card + .metric-card { border-left: 0; }
   .metric-card:nth-child(even) { border-left: 1px solid #d6dfd9; }
   .metric-card:nth-child(n+3) { border-top: 1px solid #d6dfd9; }
+  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .member-card-body { padding: 14px; }
+  .member-card-body h3 { min-height: 0; font-size: 15px; }
+  .member-contribution { font-size: 13px; }
 }
 @media (max-width: 1023px) {
   .seed-analysis-grid { grid-template-columns: minmax(0, 1fr); }
@@ -322,7 +371,7 @@ abbr[title] { text-decoration: none; }
 .login-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: minmax(340px, .92fr) minmax(480px, 1.08fr);
+  grid-template-columns: minmax(320px, .92fr) minmax(440px, 1.08fr);
 }
 .login-intro {
   display: flex;
@@ -426,6 +475,7 @@ abbr[title] { text-decoration: none; }
   .login-intro-copy h1 { max-width: 540px; font-size: 32px; }
   .login-intro-copy > p { margin-top: 13px; font-size: 15px; }
   .login-protocols { margin-top: 20px; }
+  .login-team { width: 100%; align-self: stretch; }
   .login-qr { display: none; }
   .login-credit { display: none; }
   .login-form-side { min-height: 480px; padding: 48px 26px 56px; }
@@ -444,6 +494,34 @@ abbr[title] { text-decoration: none; }
   .login-intro { padding: 22px 22px 26px; }
   .login-intro-copy { margin-top: 32px; }
   .login-intro-copy h1 { font-size: 28px; }
+  .login-team { padding: 14px 13px 10px; }
+  .login-team-stage, .login-team-slide { min-height: 108px; }
+  .login-team-slide { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; }
+  .login-team-slide img { width: 76px; height: 98px; }
+  .login-team-slide h3 { font-size: 15px; }
+  .team-intro { align-items: flex-start; }
+  .team-count { padding: 7px 10px; font-size: 12px; }
+  .team-grid { grid-template-columns: minmax(0, 1fr); }
+  .member-card { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); }
+  .member-photo-wrap { min-height: 100%; aspect-ratio: auto; }
+  .member-card-body { padding: 16px 15px; }
   .login-form-side { min-height: 430px; padding: 38px 22px 46px; }
   .login-card h2 { font-size: 27px; }
+}
+
+@media (max-height: 850px) and (min-width: 761px) {
+  .login-intro { padding-top: 28px; padding-bottom: 28px; }
+  .login-intro-copy { margin-top: 28px; margin-bottom: 18px; }
+  .login-intro-copy > p { margin-top: 12px; }
+  .login-protocols { margin-top: 18px; }
+  .login-team { padding-top: 12px; padding-bottom: 10px; }
+  .login-team-stage, .login-team-slide { min-height: 100px; }
+  .login-team-slide { grid-template-columns: 76px minmax(0, 1fr); gap: 12px; }
+  .login-team-slide img { width: 76px; height: 90px; }
+  .login-qr { gap: 12px; padding: 9px; }
+  .login-qr img { width: 76px; height: 76px; flex-basis: 76px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .member-photo, .login-team-controls button { transition: none; }
 }

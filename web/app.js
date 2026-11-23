@@ -18,6 +18,11 @@ const viewText = {
     description: "Melihat cara energi, jarak, dan jumlah tetangga diterjemahkan menjadi skor kandidat cluster head.",
     breadcrumb: "Fungsi keanggotaan",
   },
+  anggota: {
+    title: "Anggota kelompok",
+    description: "Kenali tim dan peran setiap anggota dalam pengembangan proyek Fuzzy CH WSN.",
+    breadcrumb: "Anggota kelompok",
+  },
   simulasi: {
     title: "Simulasi baru",
     description: "Ubah parameter jaringan dan lihat perbandingan tiga protokol pada topologi yang sama.",
