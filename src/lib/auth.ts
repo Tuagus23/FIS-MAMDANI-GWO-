@@ -3,6 +3,13 @@ import { isCurrentSession } from "./session-scope";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
 const sessionCleanup = new Set<() => void>();
+let redirectingToLogin = false;
+export function redirectToLogin(status?: "expired" | "kicked") {
+  if (redirectingToLogin) return;
+  redirectingToLogin = true;
+  const reason = sessionStorage.getItem("dashboard:kicked") ? "kicked" : status;
+  window.location.replace(reason ? `/login?status=${reason}` : "/login");
+}
 export function onSessionEnded(callback: () => void) {
   sessionCleanup.add(callback);
 }
@@ -96,7 +103,7 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const client = await getAuthClient();
   const { data, error } = await client.auth.getSession();
   if (error || !data.session) {
-    window.location.replace("/login?status=expired");
+    redirectToLogin("expired");
     throw new Error("Sesi berakhir. Silakan masuk kembali.");
   }
   const headers = new Headers(options?.headers);
@@ -115,7 +122,7 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
     if (error instanceof HttpError && error.code === "session_kicked") {
       sessionStorage.setItem("dashboard:kicked", "1");
       await client.auth.signOut({ scope: "local" });
-      window.location.replace("/login?status=kicked");
+      redirectToLogin("kicked");
       throw error;
     }
     if (

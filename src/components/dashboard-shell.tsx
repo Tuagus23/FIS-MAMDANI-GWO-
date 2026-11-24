@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode, type MouseEvent } from "react";
 import { BrandMark } from "./brand-mark";
 import { NavIcon } from "./nav-icon";
 import { useDashboard } from "./dashboard-provider";
-import { signOutDashboard } from "@/lib/auth";
+import { redirectToLogin, signOutDashboard } from "@/lib/auth";
 import { milestone, views, viewPath } from "@/lib/data";
 import { downloadCsv } from "@/lib/download";
 import { Notice } from "./ui";
@@ -196,7 +196,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                     setLogoutError("");
                     try {
                       await signOutDashboard();
-                      window.location.replace("/login");
+                      redirectToLogin();
                     } catch {
                       setLeaving(false);
                       setLogoutError(

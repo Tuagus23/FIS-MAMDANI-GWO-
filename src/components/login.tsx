@@ -1,15 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { getAuthClient, readResponse } from "@/lib/auth";
-import { loadBootstrap } from "@/lib/dashboard-cache";
+import { api, getAuthClient, readResponse } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
 import { BrandMark } from "./brand-mark";
 import { KickedNotice } from "./kicked-notice";
 export function Login() {
-  const router = useRouter();
   const [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -23,7 +20,6 @@ export function Login() {
   const failureAudio = useRef<HTMLAudioElement>(null);
   const [kicked, setKicked] = useState(false);
   useEffect(() => {
-    router.prefetch("/");
     let active = true;
     const type =
       new URLSearchParams(location.hash.slice(1)).get("type") ||
@@ -38,10 +34,10 @@ export function Login() {
         if (status === "kicked" || sessionStorage.getItem("dashboard:kicked"))
           setKicked(true);
         if (data.session) {
-          await loadBootstrap(data.session);
-          if (!active) return;
-          if (type === "invite") setSetup(data.session);
-          else router.replace("/");
+          if (type === "invite") {
+            await api("/api/session");
+            if (active) setSetup(data.session);
+          } else window.location.replace("/");
         } else if (type === "invite")
           setMessage(
             "Tautan undangan tidak berlaku atau sudah kedaluwarsa. Minta administrator mengirim tautan baru.",
@@ -56,7 +52,7 @@ export function Login() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
   async function playFailureAudio() {
     const audio = failureAudio.current;
     if (!audio) return;
@@ -84,7 +80,7 @@ export function Login() {
           throw new Error("Kata sandi yang diketik belum sama.");
         const { error } = await client.auth.updateUser({ password });
         if (error) throw error;
-        router.replace("/");
+        window.location.replace("/");
         return;
       }
       if (identifier.includes("@")) {
@@ -102,16 +98,10 @@ export function Login() {
       if (error) throw error;
       if (!data.session)
         throw new Error("NIM/nama terakhir atau kata sandi belum benar.");
-      try {
-        await loadBootstrap(data.session);
-      } catch (error) {
-        await client.auth.signOut({ scope: "local" });
-        throw error;
-      }
       setSuccess(true);
       sessionStorage.removeItem("dashboard:kicked");
       setMessage("Login berhasil. Membuka dashboard…");
-      router.replace("/");
+      window.location.replace("/");
     } catch (error) {
       setMessage(errorMessage(error));
       if (!setup) await playFailureAudio();
@@ -213,7 +203,7 @@ export function Login() {
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       required
-                      disabled={busy}
+                      disabled={!ready || busy}
                     />
                   </>
                 )}
@@ -236,7 +226,7 @@ export function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={busy}
+                    disabled={!ready || busy}
                   />
                   <button
                     className="password-toggle"
@@ -245,6 +235,7 @@ export function Login() {
                       reveal ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"
                     }
                     aria-pressed={reveal}
+                    disabled={!ready || busy}
                     onClick={() => setReveal((value) => !value)}
                   >
                     <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -287,7 +278,7 @@ export function Login() {
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
                       required
-                      disabled={busy}
+                      disabled={!ready || busy}
                     />
                   </>
                 )}

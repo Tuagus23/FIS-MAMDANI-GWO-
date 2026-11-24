@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { api, getAuthClient } from "@/lib/auth";
+import { api, getAuthClient, redirectToLogin } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
 import {
   cachedDataset,
@@ -102,7 +102,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       .then(async (client) => {
         const { data } = await client.auth.getSession();
         if (!data.session) {
-          window.location.replace("/login");
+          redirectToLogin();
           return;
         }
         if (
@@ -121,12 +121,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           id: datasets.default,
         });
         const { data: listener } = client.auth.onAuthStateChange((event) => {
-          if (event === "SIGNED_OUT")
-            window.location.replace(
-              sessionStorage.getItem("dashboard:kicked")
-                ? "/login?status=kicked"
-                : "/login",
-            );
+          if (event === "SIGNED_OUT") redirectToLogin();
         });
         unsubscribe = () => listener.subscription.unsubscribe();
       })
