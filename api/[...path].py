@@ -10,13 +10,14 @@ from auth import (
     AuthConfigurationError,
     AuthDenied,
     AuthForbidden,
+    AuthKicked,
     AuthProviderUnavailable,
     public_auth_config,
     sign_in_with_identifier,
     verify_authorization_header,
 )
 from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
-from access import AccessConflict, list_users, update_user
+from access import AccessConflict, end_session, kick_member, list_users, update_user
 
 
 class handler(BaseHTTPRequestHandler):
@@ -57,6 +58,11 @@ class handler(BaseHTTPRequestHandler):
             self.manage_users()
             return
 
+        if request.path == "/api/session":
+            if self.require_authentication():
+                self.send_json({"identity": {key: self.auth_identity[key] for key in ("id", "name", "role")}})
+            return
+
         if request.path == "/api/dashboard":
             if not self.require_authentication():
                 return
@@ -82,6 +88,22 @@ class handler(BaseHTTPRequestHandler):
             return
         if request_path == "/api/admin-users":
             self.manage_users(update=True)
+            return
+        if request_path == "/api/admin-kick":
+            self.manage_users(update=True, kick=True)
+            return
+        if request_path == "/api/session":
+            if not self.require_authentication():
+                return
+            try:
+                end_session(self.headers.get("Authorization", "").partition(" ")[2])
+                self.send_json({"message": "Sesi dashboard diakhiri."})
+            except (AuthConfigurationError, AuthProviderUnavailable):
+                self.send_json({"error": "Sesi belum dapat diakhiri. Coba lagi."}, status=503)
+            except AuthDenied as error:
+                self.send_json({"error": str(error)}, status=401)
+            except AuthForbidden as error:
+                self.send_json({"error": str(error)}, status=403)
             return
         if request_path != "/api/simulate":
             self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
@@ -146,6 +168,8 @@ class handler(BaseHTTPRequestHandler):
             self.send_json(sign_in_with_identifier(identifier, password))
         except AuthConfigurationError as error:
             self.send_json({"error": str(error)}, status=503)
+        except AuthKicked as error:
+            self.send_json({"error": str(error), "code": "session_kicked"}, status=401)
         except AuthDenied as error:
             self.send_json({"error": str(error)}, status=401)
         except AuthForbidden as error:
@@ -162,6 +186,8 @@ class handler(BaseHTTPRequestHandler):
             return True
         except AuthConfigurationError as error:
             self.send_json({"error": str(error)}, status=503)
+        except AuthKicked as error:
+            self.send_json({"error": str(error), "code": "session_kicked"}, status=401)
         except AuthDenied as error:
             self.send_json({"error": str(error)}, status=401)
         except AuthForbidden as error:
@@ -173,7 +199,7 @@ class handler(BaseHTTPRequestHandler):
             )
         return False
 
-    def manage_users(self, update: bool = False) -> None:
+    def manage_users(self, update: bool = False, kick: bool = False) -> None:
         if not self.require_authentication():
             return
         token = self.headers.get("Authorization", "").partition(" ")[2]
@@ -185,7 +211,8 @@ class handler(BaseHTTPRequestHandler):
                 payload = json.loads(self.rfile.read(length))
                 if not isinstance(payload, dict):
                     raise ValueError("Permintaan perubahan akun tidak valid.")
-                self.send_json(update_user(self.auth_identity, token, payload))
+                operation = kick_member if kick else update_user
+                self.send_json(operation(self.auth_identity, token, payload))
             else:
                 self.send_json(list_users(self.auth_identity, token))
         except AuthForbidden as error:

@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { api, getAuthClient, readResponse } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
 import { BrandMark } from "./brand-mark";
+import { KickedNotice } from "./kicked-notice";
 export function Login() {
   const [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
@@ -17,6 +18,7 @@ export function Login() {
   const [success, setSuccess] = useState(false),
     [audioBlocked, setAudioBlocked] = useState(false);
   const failureAudio = useRef<HTMLAudioElement>(null);
+  const [kicked, setKicked] = useState(false);
   useEffect(() => {
     let active = true;
     const type =
@@ -29,6 +31,8 @@ export function Login() {
         if (error) throw error;
         if (!active) return;
         setReady(true);
+        if (status === "kicked" || sessionStorage.getItem("dashboard:kicked"))
+          setKicked(true);
         if (data.session) {
           await api("/api/datasets");
           if (!active) return;
@@ -101,6 +105,7 @@ export function Login() {
         throw error;
       }
       setSuccess(true);
+      sessionStorage.removeItem("dashboard:kicked");
       setMessage("Login berhasil. Membuka dashboard…");
       window.location.replace("/");
     } catch (error) {
@@ -319,6 +324,16 @@ export function Login() {
         </section>
       </main>
       <audio ref={failureAudio} src="/audio/login-failure.mp3" preload="auto" />
+      {kicked && (
+        <KickedNotice
+          onDismiss={() => {
+            setKicked(false);
+            sessionStorage.removeItem("dashboard:kicked");
+            window.history.replaceState(null, "", "/login");
+            document.getElementById("identifierInput")?.focus();
+          }}
+        />
+      )}
     </div>
   );
 }

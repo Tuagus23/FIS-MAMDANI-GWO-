@@ -9,7 +9,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import access
-from auth import AuthDenied, AuthForbidden, verify_authorization_header
+from auth import AuthDenied, AuthForbidden, AuthKicked, AuthProviderUnavailable, verify_authorization_header
 
 ADMIN_ID = "813dc01f-c17c-4540-9138-9cec2c799408"
 MEMBER_ID = "0fee4301-351b-417a-961c-600c146bb817"
@@ -28,9 +28,23 @@ class AccessTests(unittest.TestCase):
             provider.assert_not_called()
 
     def test_revoked_or_missing_identity_is_denied(self):
-        for rows in [[], [{"id": MEMBER_ID, "active": False, "role": "member"}]]:
+        for rows in [{"state": "access_revoked"}, {"id": MEMBER_ID, "active": False, "role": "member"}]:
             with patch.object(access, "_request", return_value=rows), self.assertRaises(AuthForbidden):
                 access.read_identity(MEMBER_ID, "token")
+
+    def test_kicked_session_is_distinct_from_expired_or_missing_state(self):
+        for profile, exception in [({"state": "kicked"}, AuthKicked), ({"state": "expired"}, AuthDenied), ([], AuthProviderUnavailable)]:
+            with patch.object(access, "_request", return_value=profile), self.assertRaises(exception):
+                access.read_identity(MEMBER_ID, "token")
+
+    def test_forged_identity_cannot_reuse_another_users_profile(self):
+        with patch.object(access, "_request", return_value={"id": ADMIN_ID, "active": True, "role": "super_admin", "state": "open"}), self.assertRaises(AuthDenied):
+            access.read_identity(MEMBER_ID, "token")
+
+    def test_member_cannot_kick_even_with_an_admin_target_id(self):
+        with patch.object(access, "_request") as provider, self.assertRaises(AuthForbidden):
+            access.kick_member(MEMBER, "token", {"id": ADMIN_ID})
+        provider.assert_not_called()
 
     def test_invalid_role_status_or_version_never_reaches_database(self):
         valid = {"id": MEMBER_ID, "role": "member", "active": True, "updated_at": VERSION}
@@ -106,6 +120,17 @@ class ApiTests(unittest.TestCase):
         def denied(_): raise AuthDenied("Sesi tidak berlaku.")
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=denied):
             self.assertEqual(self.request("/api/admin-users")[0], 401)
+
+    def test_member_cannot_call_kick_endpoint(self):
+        with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _: MEMBER):
+            self.assertEqual(self.request("/api/admin-kick", {"id": ADMIN_ID})[0], 403)
+
+    def test_kicked_session_returns_sticker_error_on_every_protected_route(self):
+        def kicked(_): raise AuthKicked("Sesi dikeluarkan.")
+        with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=kicked):
+            for route, payload in [("/api/session", None), ("/api/datasets", None), ("/api/simulate", {"nodes": 10})]:
+                status, body = self.request(route, payload)
+                self.assertEqual((status, body["code"]), (401, "session_kicked"))
 
 
 if __name__ == "__main__":

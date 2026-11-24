@@ -34,8 +34,11 @@ export default function UsersView() {
   const [role, setRole] = useState<UserRole>("member");
   const [active, setActive] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [kicking, setKicking] = useState<string | null>(null);
+  const [kickTarget, setKickTarget] = useState<DashboardUser | null>(null);
   const editor = useRef<HTMLFormElement>(null);
   const editTrigger = useRef<HTMLButtonElement | null>(null);
+  const kickConfirm = useRef<HTMLButtonElement>(null);
   const isAdmin = info?.identity.role === "super_admin";
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,8 +73,37 @@ export default function UsersView() {
     return () => controller.abort();
   }, [isAdmin, refreshIdentity]);
   useEffect(() => {
+    if (!isAdmin) return;
+    const controller = new AbortController();
+    let pending = false;
+    const interval = window.setInterval(async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const response = await api<UsersResponse>("/api/admin-users", {
+          signal: controller.signal,
+        });
+        setResult(response);
+      } catch (failure) {
+        if (failure instanceof HttpError && failure.status === 403) {
+          setResult(null);
+          void refreshIdentity();
+        }
+      } finally {
+        pending = false;
+      }
+    }, 15000);
+    return () => {
+      window.clearInterval(interval);
+      controller.abort();
+    };
+  }, [isAdmin, refreshIdentity]);
+  useEffect(() => {
     if (editing) editor.current?.focus();
   }, [editing]);
+  useEffect(() => {
+    if (kickTarget) kickConfirm.current?.focus();
+  }, [kickTarget]);
 
   if (!isAdmin)
     return (
@@ -91,13 +123,20 @@ export default function UsersView() {
         .toLocaleLowerCase("id")
         .includes(query.trim().toLocaleLowerCase("id")) &&
       (filter === "all" ||
-        (filter === "inactive" ? !user.active : user.role === filter)),
+        (filter === "online"
+          ? user.logged_in
+          : filter === "offline"
+            ? !user.logged_in
+            : filter === "inactive"
+              ? !user.active
+              : user.role === filter)),
   );
   const isSelf = editing?.id === info?.identity.id;
   const changed =
     editing && (role !== editing.role || active !== editing.active);
 
   function edit(user: DashboardUser, trigger: HTMLButtonElement) {
+    setKickTarget(null);
     editTrigger.current = trigger;
     setEditing(user);
     setRole(user.role);
@@ -139,15 +178,68 @@ export default function UsersView() {
     }
   }
 
+  async function kick() {
+    if (!kickTarget || kicking) return;
+    setKicking(kickTarget.id);
+    setError("");
+    setMessage("");
+    try {
+      const response = await api<{ message: string }>("/api/admin-kick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: kickTarget.id }),
+      });
+      setMessage(response.message);
+      setKickTarget(null);
+      await load();
+    } catch (failure) {
+      setError(errorMessage(failure));
+    } finally {
+      setKicking(null);
+    }
+  }
+
   return (
     <>
       <p className="admin-access-note">
         Semua pengguna dapat menjalankan simulasi dan mengunduh data. Super
         admin juga dapat mengelola peran serta mengaktifkan atau menonaktifkan
-        akses akun.
+        akses akun. Status login diperbarui otomatis; koneksi yang tidak
+        terdeteksi selama 90 detik tampil sebagai Tidak login. Kick mengakhiri
+        sesi tanpa memblokir akun.
       </p>
       {error && <Notice error>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
+      {kickTarget && (
+        <Panel title={`Kick ${kickTarget.name}?`}>
+          <p className="admin-edit-help">
+            Semua sesi dashboard member ini akan diakhiri. Mereka akan melihat
+            stiker bercanda dan tetap bisa login kembali.
+          </p>
+          <div className="admin-form-actions">
+            <button
+              ref={kickConfirm}
+              className="button button-danger"
+              disabled={kicking !== null}
+              onClick={() => {
+                void kick();
+              }}
+            >
+              {kicking ? "Mengakhiri sesi…" : "Ya, kick member"}
+            </button>
+            <button
+              className="button button-secondary"
+              disabled={kicking !== null}
+              onClick={() => {
+                setKickTarget(null);
+                editTrigger.current?.focus();
+              }}
+            >
+              Batal kick
+            </button>
+          </div>
+        </Panel>
+      )}
       {editing && (
         <Panel title={`Atur akses: ${editing.name}`}>
           <form
@@ -220,7 +312,7 @@ export default function UsersView() {
         action={
           <button
             className="button button-secondary"
-            disabled={loading || saving}
+            disabled={loading || saving || kicking !== null}
             onClick={() => {
               setEditing(null);
               void load();
@@ -251,7 +343,9 @@ export default function UsersView() {
               <option value="all">Semua akun</option>
               <option value="super_admin">Super admin</option>
               <option value="member">Pengguna</option>
-              <option value="inactive">Nonaktif</option>
+              <option value="online">Sedang login</option>
+              <option value="offline">Tidak login</option>
+              <option value="inactive">Akses nonaktif</option>
             </select>
           </label>
         </div>
@@ -259,20 +353,20 @@ export default function UsersView() {
           {loading
             ? "Memuat daftar pengguna…"
             : result
-              ? `${matching.length} dari ${users.length} akun · ${users.filter((u) => u.role === "super_admin" && u.active).length} super admin aktif`
+              ? `${matching.length} dari ${users.length} akun · ${users.filter((u) => u.logged_in).length} sedang login`
               : "Daftar pengguna belum dapat dimuat. Pilih Muat ulang untuk mencoba lagi."}
         </p>
         {result && (
           <div className="table-wrap admin-user-table" aria-busy={loading}>
             <table className="data-table">
               <caption className="sr-only">
-                Daftar akun dashboard, peran, dan status akses
+                Daftar akun dashboard, peran, dan status login
               </caption>
               <thead>
                 <tr>
                   <th scope="col">Pengguna</th>
                   <th scope="col">Peran</th>
-                  <th scope="col">Status</th>
+                  <th scope="col">Status login</th>
                   <th scope="col">Tindakan</th>
                 </tr>
               </thead>
@@ -287,25 +381,48 @@ export default function UsersView() {
                         )}
                       </span>
                       <span className="admin-user-id">{user.login_id}</span>
+                      {!user.active && (
+                        <span className="admin-user-id">
+                          Akses dinonaktifkan
+                        </span>
+                      )}
                     </th>
                     <td>{roleLabel(user.role)}</td>
                     <td>
                       <span
-                        className={`admin-status ${user.active ? "is-active" : "is-inactive"}`}
+                        className={`admin-status ${user.logged_in ? "is-active" : "is-offline"}`}
                       >
-                        {user.active ? "Aktif" : "Nonaktif"}
+                        {user.logged_in ? "Sedang login" : "Tidak login"}
                       </span>
                     </td>
                     <td>
-                      <button
-                        className="button button-quiet"
-                        disabled={saving}
-                        aria-label={`Atur akses ${user.name}`}
-                        aria-expanded={editing?.id === user.id}
-                        onClick={(event) => edit(user, event.currentTarget)}
-                      >
-                        Atur akses
-                      </button>
+                      <div className="admin-row-actions">
+                        <button
+                          className="button button-quiet"
+                          disabled={saving || kicking !== null}
+                          aria-label={`Atur akses ${user.name}`}
+                          aria-expanded={editing?.id === user.id}
+                          onClick={(event) => edit(user, event.currentTarget)}
+                        >
+                          Atur akses
+                        </button>
+                        {user.role === "member" && user.logged_in && (
+                          <button
+                            className="button button-danger"
+                            disabled={saving || kicking !== null}
+                            aria-label={`Kick ${user.name}`}
+                            onClick={(event) => {
+                              editTrigger.current = event.currentTarget;
+                              setKickTarget(user);
+                              setEditing(null);
+                              setError("");
+                              setMessage("");
+                            }}
+                          >
+                            Kick
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -323,7 +440,11 @@ export default function UsersView() {
         title="Riwayat perubahan akses"
         caption="20 perubahan terbaru. Setiap perubahan menyimpan nama admin, akun yang diubah, dan waktu penyimpanan."
       >
-        {!result?.activity.length ? (
+        {!result ? (
+          <p className="table-footnote">
+            {loading ? "Memuat riwayat…" : "Riwayat belum dapat dimuat."}
+          </p>
+        ) : !result.activity.length ? (
           <p className="table-footnote">
             Belum ada perubahan akses yang tercatat.
           </p>
@@ -334,6 +455,8 @@ export default function UsersView() {
                 <div>
                   <strong>{entry.target_name}</strong>
                   <p>
+                    {entry.action === "session_kicked" &&
+                      "Sesi dashboard dikeluarkan. "}
                     {entry.old_role !== entry.new_role &&
                       `Peran: ${roleLabel(entry.old_role)} → ${roleLabel(entry.new_role)}. `}
                     {entry.old_active !== entry.new_active &&

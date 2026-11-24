@@ -86,6 +86,7 @@ export interface DashboardUser {
   name: string;
   role: UserRole;
   active: boolean;
+  logged_in: boolean;
   updated_at: string;
 }
 export interface AccessActivity {
@@ -97,6 +98,8 @@ export interface AccessActivity {
   old_active: boolean;
   new_active: boolean;
   created_at: string;
+  action: "access_updated" | "session_kicked";
+  session_count: number | null;
 }
 export interface UsersResponse {
   users: DashboardUser[];

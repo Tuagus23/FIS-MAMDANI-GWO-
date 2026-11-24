@@ -16,6 +16,10 @@ class AuthDenied(Exception):
     pass
 
 
+class AuthKicked(AuthDenied):
+    pass
+
+
 class AuthForbidden(Exception):
     pass
 

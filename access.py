@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from auth import AuthDenied, AuthForbidden, AuthProviderUnavailable, _login_directory, _settings
+from auth import AuthDenied, AuthForbidden, AuthKicked, AuthProviderUnavailable, _login_directory, _settings
 
 
 class AccessConflict(Exception):
@@ -48,10 +48,17 @@ def read_identity(user_id: str, token: str) -> dict:
         normalized_id = str(UUID(user_id))
     except ValueError as error:
         raise AuthDenied("Sesi tidak berlaku. Silakan masuk kembali.") from error
-    rows = _request(f"dashboard_users?id=eq.{normalized_id}&select=id,role,active", token)
-    if not isinstance(rows, list) or len(rows) != 1 or not rows[0].get("active"):
+    profile = _request("rpc/dashboard_session_identity", token, {})
+    if not isinstance(profile, dict):
+        raise AuthProviderUnavailable
+    if profile.get("state") == "kicked":
+        raise AuthKicked("Sesi Anda dikeluarkan oleh super admin.")
+    if profile.get("state") == "expired":
+        raise AuthDenied("Sesi berakhir. Silakan masuk kembali.")
+    if profile.get("state") == "access_revoked" or not profile.get("active"):
         raise AuthForbidden("Akses akun ini dinonaktifkan atau belum diberikan. Hubungi super admin.")
-    profile = rows[0]
+    if profile.get("id") != normalized_id or profile.get("state") != "open":
+        raise AuthDenied("Sesi tidak berlaku. Silakan masuk kembali.")
     if profile.get("role") not in {"member", "super_admin"}:
         raise AuthForbidden("Peran akun tidak valid. Hubungi super admin.")
     return profile
@@ -71,13 +78,17 @@ def list_users(identity: dict, token: str) -> dict:
     require_super_admin(identity)
     rows = _request("dashboard_users?select=id,login_id,role,active,updated_at&order=login_id", token)
     logs = _request("dashboard_access_log?select=*&order=created_at.desc,id.desc&limit=20", token)
-    if not isinstance(rows, list) or not isinstance(logs, list):
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat().replace("+00:00", "Z")
+    sessions = _request(f"dashboard_sessions?select=user_id&ended_at=is.null&last_seen_at=gte.{cutoff}", token)
+    if not isinstance(rows, list) or not isinstance(logs, list) or not isinstance(sessions, list):
         raise AuthProviderUnavailable
     # RLS can change between verification and this read if another admin revokes access.
     if not any(row["id"] == identity["id"] and row["active"] and row["role"] == "super_admin" for row in rows):
         raise AuthForbidden("Hak super admin Anda telah berubah. Muat ulang halaman.")
     names = _names()
-    users = [{**row, "name": names.get(row["login_id"], row["login_id"])} for row in rows]
+    online = {row["user_id"] for row in sessions}
+    users = [{**row, "name": names.get(row["login_id"], row["login_id"]),
+              "logged_in": row["active"] and row["id"] in online} for row in rows]
     by_id = {row["id"]: row["name"] for row in users}
     return {"users": users, "activity": [
         {**row, "actor_name": by_id.get(row["actor_id"], "Akun admin"),
@@ -106,3 +117,17 @@ def update_user(identity: dict, token: str, payload: dict) -> dict:
         "target_user_id": target, "new_role": role, "new_active": active, "expected_updated_at": version,
     })
     return {"message": "Akses pengguna berhasil diperbarui."}
+
+
+def kick_member(identity: dict, token: str, payload: dict) -> dict:
+    require_super_admin(identity)
+    try:
+        target = str(UUID(str(payload.get("id", ""))))
+    except ValueError as error:
+        raise ValueError("ID pengguna tidak valid.") from error
+    _request("rpc/dashboard_kick_member", token, {"target_user_id": target})
+    return {"message": "Member telah dikeluarkan dari sesi dashboard. Akunnya tetap bisa login kembali."}
+
+
+def end_session(token: str) -> None:
+    _request("rpc/dashboard_end_session", token, {})

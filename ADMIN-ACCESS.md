@@ -9,6 +9,27 @@ The admin API uses the single-segment `/api/admin-users` path supported by the
 existing Vercel Python function routing. A nested `/api/admin/users` URL is
 handled by Next.js as 404 on this deployment setup.
 
+## Session presence and kick
+
+Status now describes dashboard connection, using a 20-second heartbeat and a
+90-second expiry; account activation remains a separate permission in the editor.
+The directory refreshes every 15 seconds. Kick is available for online members,
+preserves their account, ends all existing dashboard sessions, and is audited.
+Admin targets are rejected both in the UI and by the guarded SQL function.
+
+Session identity is checked against `auth.sessions` through JWT `session_id`.
+The app stores ended-session markers without modifying Supabase Auth tables.
+Refreshing a kicked token cannot reopen its session. A new password login creates
+a new session, so the member can return. Database access helpers also reject
+ended admin sessions, preventing direct-RPC bypass after logout.
+
+The supplied meme is reused from `/images/motto/surprise.jpg` (SHA256 matches the
+attached file). A native modal interrupts the logged-out flow with the requested
+joke and a clear return-to-login action. Its one 200ms scale/opacity entrance
+indicates the session change; it has no audio, flashes, or automatic replay, and
+reduced motion removes the transition. Existing fonts/colors keep it part of the
+dashboard. The kick confirmation receives focus and cancellation restores it.
+
 ## UI direction
 
 Reading this as an administration view for the group and lecturer in the existing

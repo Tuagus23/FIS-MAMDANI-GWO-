@@ -59,6 +59,43 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
   }, [refreshIdentity]);
+  const authenticated = info !== null;
+  useEffect(() => {
+    if (!authenticated) return;
+    const controller = new AbortController();
+    let pending = false;
+    const heartbeat = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const { identity } = await api<Pick<DatasetsResponse, "identity">>(
+          "/api/session",
+          { signal: controller.signal },
+        );
+        setInfo((current) =>
+          current && current.identity.role !== identity.role
+            ? { ...current, identity }
+            : current,
+        );
+      } catch {
+        // Authentication failures are handled centrally; a temporary outage should not discard the current data.
+      } finally {
+        pending = false;
+      }
+    };
+    const interval = window.setInterval(() => {
+      void heartbeat();
+    }, 20000);
+    const resume = () => {
+      if (document.visibilityState === "visible") void heartbeat();
+    };
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      window.clearInterval(interval);
+      controller.abort();
+      document.removeEventListener("visibilitychange", resume);
+    };
+  }, [authenticated]);
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
@@ -79,7 +116,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         setInfo(datasets);
         const { data: listener } = client.auth.onAuthStateChange((event) => {
-          if (event === "SIGNED_OUT") window.location.replace("/login");
+          if (event === "SIGNED_OUT")
+            window.location.replace(
+              sessionStorage.getItem("dashboard:kicked")
+                ? "/login?status=kicked"
+                : "/login",
+            );
         });
         unsubscribe = () => listener.subscription.unsubscribe();
       })

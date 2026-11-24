@@ -125,9 +125,33 @@ terkonfirmasi, tambahkan pemetaan NIM/nama ke roster server, lalu buat profil
 `dashboard_users` dengan UUID Auth yang sama, `login_id` NIM, `role='member'`,
 dan `active=true`. Jangan mengizinkan pendaftaran membuat super admin otomatis.
 
+Kolom **Status login** menunjukkan **Sedang login / Tidak login**, terpisah
+dari izin akses akun. Dashboard mengirim heartbeat setiap 20 detik dan daftar
+admin diperbarui setiap 15 detik. Koneksi tanpa heartbeat selama 90 detik
+dianggap tidak login, misalnya setelah tab ditutup atau jaringan terputus.
+Logout normal langsung menandai sesi berakhir.
+
+Super admin dapat **Kick** member yang sedang login, melalui konfirmasi pada
+halaman Kelola pengguna. Semua sesi dashboard member yang sudah ada ditandai
+berakhir, termasuk sesi Auth yang belum mengirim heartbeat. Token lama dan
+refresh token dari sesi tersebut tidak dapat membuka API dashboard lagi;
+login baru membuat sesi baru dan tetap diperbolehkan. Super admin tidak dapat
+dikick. Tindakan dicatat di riwayat akses. Tidak ada penulisan langsung ke tabel
+Auth atau pemakaian service key. Identitas sesi mengikuti klaim JWT
+[`session_id`](https://supabase.com/docs/guides/auth/sessions).
+
+Pada heartbeat/permintaan berikutnya, member yang dikick diarahkan ke login
+dan melihat stiker yang diberikan pemilik proyek, dengan teks **“Ini untuk
+senang-senang saja.”** Popup tidak memakai audio atau kilatan dan dapat ditutup
+dengan tombol atau Escape. Stiker memakai aset motto yang sama; tidak ada
+salinan berkas baru.
+
 Jalankan `python -m unittest discover -s tests -v` untuk uji API dan izin.
 `supabase/tests/dashboard_roles.sql` menguji RLS dan RPC pada database dengan
 transaksi yang seluruhnya di-rollback.
+`supabase/tests/dashboard_sessions.sql` menguji heartbeat, kick, pencegahan
+pemakaian kembali sesi lama, audit, dan logout. Login sekali sebagai akun uji
+admin/member sebelum menjalankan kedua skrip agar tersedia sesi Auth nyata.
 
 Di Supabase **Authentication → URL Configuration**, set Site URL ke
 `https://fuzzy-ch-wsn-dashboard.vercel.app` dan tambahkan

@@ -1,6 +1,7 @@
 -- Every write in this authorization test is rolled back.
 begin;
-select set_config('request.jwt.claim.sub', (select id::text from public.dashboard_users where login_id = '2308561131'), true);
+select set_config('request.jwt.claims', (select jsonb_build_object('sub',u.id,'session_id',s.id,'role','authenticated')::text
+  from public.dashboard_users u join auth.sessions s on s.user_id=u.id where u.login_id='2308561131' order by s.created_at desc limit 1), true);
 set local role authenticated;
 do $$
 declare total integer;
@@ -21,7 +22,8 @@ begin
 end;
 $$;
 reset role;
-select set_config('request.jwt.claim.sub', (select id::text from public.dashboard_users where login_id = '2308561040'), true);
+select set_config('request.jwt.claims', (select jsonb_build_object('sub',u.id,'session_id',s.id,'role','authenticated')::text
+  from public.dashboard_users u join auth.sessions s on s.user_id=u.id where u.login_id='2308561040' order by s.created_at desc limit 1), true);
 set local role authenticated;
 do $$
 declare

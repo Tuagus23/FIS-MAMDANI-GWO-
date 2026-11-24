@@ -78,6 +78,12 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   try {
     return await readResponse<T>(url, { ...options, headers });
   } catch (error) {
+    if (error instanceof HttpError && error.code === "session_kicked") {
+      sessionStorage.setItem("dashboard:kicked", "1");
+      await client.auth.signOut({ scope: "local" });
+      window.location.replace("/login?status=kicked");
+      throw error;
+    }
     if (
       error instanceof HttpError &&
       (error.status === 401 || error.code === "access_revoked")
@@ -85,5 +91,15 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
       await client.auth.signOut({ scope: "local" });
     }
     throw error;
+  }
+}
+
+export async function signOutDashboard() {
+  const client = await getAuthClient();
+  try {
+    await api("/api/session", { method: "POST" });
+  } finally {
+    const { error } = await client.auth.signOut({ scope: "local" });
+    if (error) throw error;
   }
 }
