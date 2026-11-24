@@ -1,6 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ResourceCache } from "../src/lib/resource-cache.ts";
+import { isCurrentSession } from "../src/lib/session-scope.ts";
+
+test("an obsolete response cannot sign out a new login, including the same user", () => {
+  const session = (user, id, revision) => ({
+    user: { id: user },
+    access_token: `header.${Buffer.from(JSON.stringify({ session_id: id, revision })).toString("base64url")}.signature`,
+  });
+  const original = session("agus", "session-one", 1);
+  assert.equal(
+    isCurrentSession(original, session("agus", "session-one", 2)),
+    true,
+  );
+  assert.equal(
+    isCurrentSession(original, session("agus", "session-two", 1)),
+    false,
+  );
+  assert.equal(
+    isCurrentSession(original, session("member", "session-other", 1)),
+    false,
+  );
+  assert.equal(isCurrentSession(original, null), false);
+});
 
 test("concurrent requests share one fetch and switching back reuses data", async () => {
   const cache = new ResourceCache();

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isCurrentSession } from "./session-scope";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
 const sessionCleanup = new Set<() => void>();
@@ -104,6 +105,13 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   try {
     return await readResponse<T>(url, { ...options, headers });
   } catch (error) {
+    if (
+      error instanceof HttpError &&
+      (error.status === 401 || error.code === "access_revoked")
+    ) {
+      const { data: latest } = await client.auth.getSession();
+      if (!isCurrentSession(data.session, latest.session)) throw error;
+    }
     if (error instanceof HttpError && error.code === "session_kicked") {
       sessionStorage.setItem("dashboard:kicked", "1");
       await client.auth.signOut({ scope: "local" });

@@ -7,6 +7,8 @@ import type {
   UsersResponse,
 } from "./types";
 import { ResourceCache } from "./resource-cache";
+import { sessionScope } from "./session-scope";
+export { sessionScope } from "./session-scope";
 
 const bootstraps = new ResourceCache<BootstrapResponse>(15000);
 const datasets = new ResourceCache<DashboardData>();
@@ -18,23 +20,6 @@ onSessionEnded(() => {
   datasets.clear();
   directories.clear();
 });
-
-export function sessionScope(session: Session): string {
-  // This partitions in-memory data only. Authorization is always checked by the API.
-  try {
-    const payload = JSON.parse(
-      atob(
-        session.access_token
-          .split(".")[1]
-          .replace(/-/g, "+")
-          .replace(/_/g, "/"),
-      ),
-    );
-    if (typeof payload.session_id === "string")
-      return `${session.user.id}:${payload.session_id}`;
-  } catch {}
-  return `${session.user.id}:${session.access_token}`;
-}
 
 function checkedDataset(value: DashboardData, id: string) {
   if (
