@@ -1236,7 +1236,29 @@ function downloadSimulation() {
   ], rows, "Metrik simulasi belum tersedia. Jalankan simulasi terlebih dahulu.");
 }
 
+function bindMottoSurprise() {
+  const dialog = $("#mottoSurprise");
+  let closeTimer;
+  $("#mottoSurpriseTrigger").addEventListener("click", (event) => {
+    if (dialog.open) return;
+    dialog.toggleAttribute("data-instant", event.detail === 0);
+    dialog.showModal();
+    closeTimer = window.setTimeout(() => dialog.close(), 2400);
+  });
+  $("#mottoSurpriseClose").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (event) => {
+    if (event.target !== dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+  });
+  dialog.addEventListener("close", () => window.clearTimeout(closeTimer));
+  window.addEventListener("hashchange", () => {
+    if (dialog.open) dialog.close();
+  });
+}
+
 function bindEvents() {
+  bindMottoSurprise();
   $$("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view, { updateHash: true })));
   $("#datasetSelect").addEventListener("change", (event) => loadDashboard(event.target.value));
   $("#logoutButton").addEventListener("click", async () => {
