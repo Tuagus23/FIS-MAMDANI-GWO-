@@ -1,6 +1,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
+class HttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 export function getAuthClient(): Promise<SupabaseClient> {
   if (!clientPromise) {
     clientPromise = readResponse<{ url: string; publishableKey: string }>(
@@ -40,11 +48,12 @@ export async function readResponse<T>(
       typeof result.error === "string"
         ? result.error
         : null;
-    throw new Error(
+    throw new HttpError(
       message ||
         ([504, 502, 503].includes(response.status)
           ? "Server terlalu lama merespons. Coba lagi sebentar."
           : "Server tidak dapat memuat data. Coba lagi sebentar."),
+      response.status,
     );
   }
   return result as T;
@@ -59,5 +68,12 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers);
   headers.set("Accept", "application/json");
   headers.set("Authorization", `Bearer ${data.session.access_token}`);
-  return readResponse<T>(url, { ...options, headers });
+  try {
+    return await readResponse<T>(url, { ...options, headers });
+  } catch (error) {
+    if (error instanceof HttpError && [401, 403].includes(error.status)) {
+      await client.auth.signOut({ scope: "local" });
+    }
+    throw error;
+  }
 }

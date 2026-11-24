@@ -14,7 +14,7 @@ export function MotionLayer({ route }: { route: string }) {
         import("gsap/ScrollTrigger"),
         import("lenis"),
       ]).then(([{ gsap }, { ScrollTrigger }, { default: Lenis }]) => {
-        if (!active) return;
+        if (!active || reduced.matches) return;
         gsap.registerPlugin(ScrollTrigger);
         const lenis = new Lenis({ lerp: 0.12, smoothWheel: true });
         const ticker = (time: number) => lenis.raf(time * 1000);

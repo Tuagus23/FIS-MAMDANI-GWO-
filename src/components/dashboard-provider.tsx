@@ -9,7 +9,11 @@ import {
 import Link from "next/link";
 import { api, getAuthClient } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
-import type { DashboardData, DatasetsResponse } from "@/lib/types";
+import type {
+  DashboardData,
+  DatasetsResponse,
+  SimulationResult,
+} from "@/lib/types";
 interface ContextValue {
   info: DatasetsResponse | null;
   datasetId: string;
@@ -18,6 +22,8 @@ interface ContextValue {
   loading: boolean;
   error: string;
   retry: () => void;
+  simulation: SimulationResult | null;
+  saveSimulation: (value: SimulationResult) => void;
 }
 const Context = createContext<ContextValue | null>(null);
 export function DashboardProvider({ children }: { children: ReactNode }) {
@@ -30,6 +36,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }>({ data: null, error: "", id: "" });
   const [authError, setAuthError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [simulation, saveSimulation] = useState<SimulationResult | null>(null);
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
@@ -110,6 +117,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         error: current ? result.error : "",
         loading: !current,
         retry,
+        simulation:
+          simulation?.config.dataset_id === datasetId ? simulation : null,
+        saveSimulation,
       }}
     >
       {children}

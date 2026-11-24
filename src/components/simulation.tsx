@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   DashboardData,
   SimulationConfig,
@@ -16,18 +16,29 @@ import {
 import { downloadCsv } from "@/lib/download";
 import { HistoryChart, SummaryTable } from "./results";
 import { Notice, Panel } from "./ui";
+import { useDashboard } from "./dashboard-provider";
 export function SimulationView({ data }: { data: DashboardData }) {
-  const [config, setConfig] = useState<SimulationConfig>({
-    nodes: 30,
-    rounds: 1600,
-    seed: 42,
-    cluster_head_count: 1,
-    dataset_id: data.dataset.id,
-  });
-  const [result, setResult] = useState<SimulationResult | null>(null);
+  const { simulation: result, saveSimulation } = useDashboard();
+  const [config, setConfig] = useState<SimulationConfig>(
+    result?.config ?? {
+      nodes: 30,
+      rounds: 1600,
+      seed: 42,
+      cluster_head_count: 1,
+      dataset_id: data.dataset.id,
+    },
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const request = useRef(0);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      controller.current?.abort();
+      request.current += 1;
+    },
+    [],
+  );
   const exportResult = () => {
     if (!result || result.config.dataset_id !== data.dataset.id) return;
     downloadCsv(
@@ -63,6 +74,7 @@ export function SimulationView({ data }: { data: DashboardData }) {
         onSubmit={async (e) => {
           e.preventDefault();
           const id = ++request.current;
+          controller.current = new AbortController();
           setBusy(true);
           setError("");
           try {
@@ -70,10 +82,14 @@ export function SimulationView({ data }: { data: DashboardData }) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(config),
+              signal: AbortSignal.any([
+                controller.current.signal,
+                AbortSignal.timeout(65000),
+              ]),
             });
             if (value.config.dataset_id !== data.dataset.id)
               throw new Error("Hasil simulasi tidak sesuai dataset.");
-            if (id === request.current) setResult(value);
+            if (id === request.current) saveSimulation(value);
           } catch (error) {
             if (id === request.current) setError(errorMessage(error));
           } finally {
