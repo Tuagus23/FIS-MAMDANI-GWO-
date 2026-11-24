@@ -23,7 +23,8 @@ def _request(path: str, token: str, payload: dict | None = None) -> object:
     )
     try:
         with urlopen(request, timeout=8) as response:
-            return json.loads(response.read())
+            body = response.read()
+            return json.loads(body) if body else None
     except HTTPError as error:
         try:
             failure = json.loads(error.read())

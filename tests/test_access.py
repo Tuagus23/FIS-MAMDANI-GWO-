@@ -19,6 +19,15 @@ VERSION = "2026-11-25T01:00:00+00:00"
 
 
 class AccessTests(unittest.TestCase):
+    def test_void_rpc_response_is_successful(self):
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self, *_): pass
+            def read(self): return b""
+        with patch.object(access, "_settings", return_value=("https://example.org", "key", set())), \
+             patch.object(access, "urlopen", return_value=Response()):
+            self.assertIsNone(access._request("rpc/dashboard_end_session", "token", {}))
+
     def test_member_cannot_list_or_update_even_with_forged_payload(self):
         with patch.object(access, "_request") as provider:
             for operation in [lambda: access.list_users(MEMBER, "token"),
