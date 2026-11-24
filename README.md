@@ -70,8 +70,8 @@ Preferensi pengurangan gerak dan perangkat sentuh dihormati.
 
 ### Login dan akses rekan
 
-Dashboard memakai Supabase Auth. Rekan dapat masuk menggunakan nama akhir atau
-NIM, sementara akun email yang sudah ada tetap dapat masuk dengan email. Tidak
+Dashboard memakai Supabase Auth. Form login menerima NIM atau nama terakhir
+yang terdaftar pada roster, lalu langsung membuka dashboard tanpa audio sukses. Tidak
 ada pendaftaran publik. Atur variabel berikut pada **Vercel → Project →
 Settings → Environment Variables**:
 

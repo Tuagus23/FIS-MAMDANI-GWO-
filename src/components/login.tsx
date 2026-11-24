@@ -16,9 +16,7 @@ export function Login() {
     [confirm, setConfirm] = useState("");
   const [success, setSuccess] = useState(false),
     [audioBlocked, setAudioBlocked] = useState(false);
-  const successAudio = useRef<HTMLAudioElement>(null),
-    failureAudio = useRef<HTMLAudioElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const failureAudio = useRef<HTMLAudioElement>(null);
   useEffect(() => {
     let active = true;
     const type =
@@ -49,22 +47,16 @@ export function Login() {
       });
     return () => {
       active = false;
-      clearTimeout(timer.current);
     };
   }, []);
-  async function playAudio(ok: boolean) {
-    const audio = ok ? successAudio.current : failureAudio.current;
+  async function playFailureAudio() {
+    const audio = failureAudio.current;
     if (!audio) return;
     audio.pause();
     audio.currentTime = 0;
     try {
       await audio.play();
       setAudioBlocked(false);
-      if (ok)
-        timer.current = setTimeout(
-          () => window.location.replace("/"),
-          Math.min((audio.duration || 4) * 1000 + 500, 10000),
-        );
     } catch {
       setAudioBlocked(true);
     }
@@ -74,6 +66,7 @@ export function Login() {
     setBusy(true);
     setMessage("");
     setAudioBlocked(false);
+    failureAudio.current?.pause();
     try {
       const client = await getAuthClient();
       if (setup) {
@@ -86,29 +79,21 @@ export function Login() {
         window.location.replace("/");
         return;
       }
-      let session: Session | null;
       if (identifier.includes("@")) {
-        const { data, error } = await client.auth.signInWithPassword({
-          email: identifier.trim(),
-          password,
-        });
-        if (error) throw error;
-        session = data.session;
-      } else {
-        const tokens = await readResponse<{
-          access_token: string;
-          refresh_token: string;
-        }>("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ identifier: identifier.trim(), password }),
-        });
-        const { data, error } = await client.auth.setSession(tokens);
-        if (error) throw error;
-        session = data.session;
+        throw new Error("Gunakan NIM atau nama terakhir yang terdaftar.");
       }
-      if (!session)
-        throw new Error("Nama akhir/NIM atau kata sandi belum benar.");
+      const tokens = await readResponse<{
+        access_token: string;
+        refresh_token: string;
+      }>("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.trim(), password }),
+      });
+      const { data, error } = await client.auth.setSession(tokens);
+      if (error) throw error;
+      if (!data.session)
+        throw new Error("NIM/nama terakhir atau kata sandi belum benar.");
       try {
         await api("/api/datasets");
       } catch (error) {
@@ -116,11 +101,11 @@ export function Login() {
         throw error;
       }
       setSuccess(true);
-      setMessage("Login berhasil. Memutar audio sebelum membuka dashboard.");
-      await playAudio(true);
+      setMessage("Login berhasil. Membuka dashboard…");
+      window.location.replace("/");
     } catch (error) {
       setMessage(errorMessage(error));
-      if (!setup) await playAudio(false);
+      if (!setup) await playFailureAudio();
     } finally {
       setBusy(false);
     }
@@ -207,7 +192,7 @@ export function Login() {
                 ) : (
                   <>
                     <label className="login-label" htmlFor="identifierInput">
-                      Nama akhir, NIM, atau email
+                      NIM atau nama terakhir
                     </label>
                     <input
                       id="identifierInput"
@@ -215,7 +200,7 @@ export function Login() {
                       type="text"
                       name="username"
                       autoComplete="username"
-                      placeholder="Masukkan nama akhir, NIM, atau email"
+                      placeholder="Masukkan NIM atau nama terakhir"
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       required
@@ -313,11 +298,9 @@ export function Login() {
               <button
                 className="login-submit"
                 type="button"
-                onClick={() => playAudio(success)}
+                onClick={playFailureAudio}
               >
-                {success
-                  ? "Putar audio dan buka dashboard"
-                  : "Putar ulang audio"}
+                Putar ulang audio
               </button>
             )}
             {success && (
@@ -329,20 +312,12 @@ export function Login() {
               <p className="login-help">
                 {setup
                   ? "Gunakan kata sandi yang berbeda dari akun lain."
-                  : "Nama akhir yang sama dipakai beberapa orang? Masuk menggunakan NIM."}
+                  : "Gunakan NIM atau nama terakhir yang terdaftar. Jika nama terakhir sama, masuk menggunakan NIM."}
               </p>
             )}
           </div>
         </section>
       </main>
-      <audio
-        ref={successAudio}
-        src="/audio/login-success.mp3"
-        preload="auto"
-        onEnded={() => {
-          if (success) window.location.replace("/");
-        }}
-      />
       <audio ref={failureAudio} src="/audio/login-failure.mp3" preload="auto" />
     </div>
   );
