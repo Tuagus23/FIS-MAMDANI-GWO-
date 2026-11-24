@@ -16,6 +16,7 @@ const Simulation = dynamic(() =>
 );
 const Team = dynamic(() => import("./team"));
 const Motto = dynamic(() => import("./motto"));
+const Users = dynamic(() => import("./users"));
 export function DashboardView({ view }: { view: View }) {
   const { data, datasetId, loading } = useDashboard();
   return (
@@ -25,7 +26,9 @@ export function DashboardView({ view }: { view: View }) {
       className={`view-section space-y-5 ${["fis", "gwo"].includes(view) ? "process-page" : ""}`}
       aria-labelledby="pageTitle"
     >
-      {view === "anggota" ? (
+      {view === "pengguna" ? (
+        <Users />
+      ) : view === "anggota" ? (
         <Team />
       ) : view === "motto" ? (
         <Motto />

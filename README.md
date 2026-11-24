@@ -101,9 +101,33 @@ pemulihan kata sandi perlu dilakukan administrator. Jangan menyimpan kata sandi
 di source code atau variabel roster.
 
 Pengguna masuk menggunakan nama akhir bila unik atau NIM. Nama akhir yang sama
-harus dibedakan dengan NIM. Peran `super_admin` ditentukan oleh konfigurasi
-server dan ditampilkan sebagai label akun; aplikasi saat ini belum menyediakan
-panel administrasi pengguna.
+harus dibedakan dengan NIM. Peran dan status akses dibaca dari tabel
+`public.dashboard_users` pada setiap permintaan. Nilai `role` dalam roster
+lama tidak lagi menjadi sumber izin.
+
+Halaman **Kelola pengguna** (`/pengguna`) hanya tersedia untuk super admin.
+Admin dapat mencari akun, mengubah peran, serta mengaktifkan atau menonaktifkan
+akses. Semua pengguna aktif tetap dapat menjalankan simulasi dan mengunduh data.
+Agus, Adrian, Rama, Wardana, dan I Wayan Supriana ditetapkan sebagai lima super
+admin awal. Akun sendiri tidak dapat dinonaktifkan atau diturunkan perannya.
+Perubahan dicatat dalam `dashboard_access_log`; versi data mencegah dua admin
+menimpa perubahan tanpa memuat ulang.
+
+Terapkan migrasi di `supabase/migrations/` sebelum merilis backend ini. RLS
+membatasi user biasa ke profil sendiri; perubahan hanya melalui RPC yang
+memeriksa super admin aktif dalam transaksi. API memakai token pengguna dan
+publishable key, sehingga tidak memerlukan `service_role` atau secret key.
+Tidak ada fallback izin ke roster jika database tidak dapat dihubungi.
+
+Panel mengelola akun yang sudah terdaftar. Pembuatan akun dan penggantian kata
+sandi tetap dilakukan lewat Supabase Auth. Untuk menambah akun, buat Auth user
+terkonfirmasi, tambahkan pemetaan NIM/nama ke roster server, lalu buat profil
+`dashboard_users` dengan UUID Auth yang sama, `login_id` NIM, `role='member'`,
+dan `active=true`. Jangan mengizinkan pendaftaran membuat super admin otomatis.
+
+Jalankan `python -m unittest discover -s tests -v` untuk uji API dan izin.
+`supabase/tests/dashboard_roles.sql` menguji RLS dan RPC pada database dengan
+transaksi yang seluruhnya di-rollback.
 
 Di Supabase **Authentication → URL Configuration**, set Site URL ke
 `https://fuzzy-ch-wsn-dashboard.vercel.app` dan tambahkan

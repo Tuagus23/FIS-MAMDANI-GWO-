@@ -6,6 +6,142 @@
   font-display: swap;
 }
 
+.admin-access-note {
+  max-width: 78ch;
+  color: #4c655b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.admin-toolbar,
+.admin-edit-fields {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.admin-toolbar label,
+.admin-edit-fields label {
+  display: grid;
+  gap: 8px;
+  color: #25463b;
+  font-size: 14px;
+  font-weight: 650;
+}
+.admin-search {
+  flex: 1 1 240px;
+}
+.admin-toolbar select {
+  min-width: 170px;
+}
+.admin-toolbar .field-input,
+.admin-edit-fields .field-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #82978d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  font-weight: 450;
+}
+.admin-result-count,
+.admin-edit-help {
+  margin: 16px 0;
+  color: #4c655b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.admin-edit-fields label {
+  flex: 1 1 200px;
+}
+.admin-form-actions {
+  display: flex;
+  gap: 10px;
+}
+.admin-user-table table {
+  min-width: 640px;
+}
+.admin-user-table .data-table th:not(:first-child),
+.admin-user-table .data-table td:not(:first-child) {
+  text-align: left;
+}
+.admin-user-table tbody th {
+  padding: 15px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #173b32;
+  font-size: 14px;
+}
+.admin-user-name {
+  display: block;
+  white-space: normal;
+  line-height: 1.5;
+}
+.admin-user-id {
+  display: block;
+  margin-top: 3px;
+  color: #526b61;
+  font-size: 13px;
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+}
+.admin-you {
+  font-weight: 450;
+  color: #526b61;
+}
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.admin-status::before {
+  content: "";
+  height: 7px;
+  width: 7px;
+  background: #28704d;
+  border-radius: 50%;
+}
+.admin-status.is-inactive {
+  color: #80502f;
+}
+.admin-status.is-inactive::before {
+  background: #80502f;
+}
+.admin-activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.admin-activity li {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e1e8e3;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.admin-activity li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.admin-activity p,
+.admin-activity time {
+  color: #4c655b;
+}
+.admin-activity time {
+  white-space: nowrap;
+  font-size: 13px;
+}
+@media (max-width: 640px) {
+  .admin-toolbar label {
+    width: 100%;
+  }
+  .admin-activity li {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
 a[href],
 button,
 summary,

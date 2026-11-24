@@ -41,6 +41,10 @@ export const views: Record<View, { title: string; description: string }> = {
     description:
       "Ubah parameter jaringan dan lihat perbandingan tiga protokol pada topologi yang sama.",
   },
+  pengguna: {
+    title: "Kelola pengguna",
+    description: "Atur peran dan akses akun yang terdaftar di dashboard.",
+  },
 };
 export const viewPath = (view: View) => (view === "hasil" ? "/" : `/${view}`);
 export const protocols = ["FUZZY", "LEACH", "GWO"] as const;

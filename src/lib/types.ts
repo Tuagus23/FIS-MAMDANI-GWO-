@@ -10,6 +10,7 @@ export type View =
   | "fis"
   | "anggota"
   | "motto"
+  | "pengguna"
   | "simulasi";
 export interface Dataset {
   id: string;
@@ -75,8 +76,31 @@ export interface DashboardData {
 }
 export interface DatasetsResponse {
   default: string;
-  identity: { name: string; role: string };
+  identity: { id: string; name: string; role: UserRole };
   datasets: Dataset[];
+}
+export type UserRole = "member" | "super_admin";
+export interface DashboardUser {
+  id: string;
+  login_id: string;
+  name: string;
+  role: UserRole;
+  active: boolean;
+  updated_at: string;
+}
+export interface AccessActivity {
+  id: number;
+  actor_name: string;
+  target_name: string;
+  old_role: UserRole;
+  new_role: UserRole;
+  old_active: boolean;
+  new_active: boolean;
+  created_at: string;
+}
+export interface UsersResponse {
+  users: DashboardUser[];
+  activity: AccessActivity[];
 }
 export interface SimulationConfig {
   nodes: number;

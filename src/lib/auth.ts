@@ -1,10 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -54,6 +55,12 @@ export async function readResponse<T>(
           ? "Server terlalu lama merespons. Coba lagi sebentar."
           : "Server tidak dapat memuat data. Coba lagi sebentar."),
       response.status,
+      result &&
+        typeof result === "object" &&
+        "code" in result &&
+        typeof result.code === "string"
+        ? result.code
+        : undefined,
     );
   }
   return result as T;
@@ -71,7 +78,10 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   try {
     return await readResponse<T>(url, { ...options, headers });
   } catch (error) {
-    if (error instanceof HttpError && [401, 403].includes(error.status)) {
+    if (
+      error instanceof HttpError &&
+      (error.status === 401 || error.code === "access_revoked")
+    ) {
       await client.auth.signOut({ scope: "local" });
     }
     throw error;

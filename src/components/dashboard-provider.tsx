@@ -3,6 +3,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useCallback,
   useState,
   type ReactNode,
 } from "react";
@@ -16,6 +17,7 @@ import type {
 } from "@/lib/types";
 interface ContextValue {
   info: DatasetsResponse | null;
+  refreshIdentity: () => Promise<void>;
   datasetId: string;
   selectDataset: (id: string) => void;
   data: DashboardData | null;
@@ -37,6 +39,26 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [simulation, saveSimulation] = useState<SimulationResult | null>(null);
+  const refreshIdentity = useCallback(async () => {
+    try {
+      const response = await api<DatasetsResponse>("/api/datasets");
+      setInfo((current) =>
+        current?.identity.role === response.identity.role &&
+        current.identity.id === response.identity.id
+          ? current
+          : response,
+      );
+    } catch (failure) {
+      setAuthError(errorMessage(failure));
+    }
+  }, []);
+  useEffect(() => {
+    const refresh = () => {
+      void refreshIdentity();
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [refreshIdentity]);
   useEffect(() => {
     let active = true;
     let unsubscribe: (() => void) | undefined;
@@ -111,6 +133,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     <Context
       value={{
         info,
+        refreshIdentity,
         datasetId,
         selectDataset,
         data: current ? result.data : null,

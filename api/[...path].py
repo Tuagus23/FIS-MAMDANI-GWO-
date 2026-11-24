@@ -16,6 +16,7 @@ from auth import (
     verify_authorization_header,
 )
 from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
+from access import AccessConflict, list_users, update_user
 
 
 class handler(BaseHTTPRequestHandler):
@@ -40,6 +41,7 @@ class handler(BaseHTTPRequestHandler):
                 {
                     "default": "results",
                     "identity": {
+                        "id": self.auth_identity["id"],
                         "name": self.auth_identity["name"],
                         "role": self.auth_identity["role"],
                     },
@@ -49,6 +51,10 @@ class handler(BaseHTTPRequestHandler):
                     ],
                 }
             )
+            return
+
+        if request.path == "/api/admin/users":
+            self.manage_users()
             return
 
         if request.path == "/api/dashboard":
@@ -73,6 +79,9 @@ class handler(BaseHTTPRequestHandler):
         request_path = urlparse(self.path).path
         if request_path == "/api/login":
             self.sign_in()
+            return
+        if request_path == "/api/admin/users":
+            self.manage_users(update=True)
             return
         if request_path != "/api/simulate":
             self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
@@ -139,6 +148,8 @@ class handler(BaseHTTPRequestHandler):
             self.send_json({"error": str(error)}, status=503)
         except AuthDenied as error:
             self.send_json({"error": str(error)}, status=401)
+        except AuthForbidden as error:
+            self.send_json({"error": str(error)}, status=403)
         except AuthProviderUnavailable:
             self.send_json(
                 {"error": "Layanan login tidak dapat dihubungi. Coba lagi sebentar."},
@@ -154,13 +165,39 @@ class handler(BaseHTTPRequestHandler):
         except AuthDenied as error:
             self.send_json({"error": str(error)}, status=401)
         except AuthForbidden as error:
-            self.send_json({"error": str(error)}, status=403)
+            self.send_json({"error": str(error), "code": "access_revoked"}, status=403)
         except AuthProviderUnavailable:
             self.send_json(
                 {"error": "Layanan login tidak dapat dihubungi. Coba lagi sebentar."},
                 status=503,
             )
         return False
+
+    def manage_users(self, update: bool = False) -> None:
+        if not self.require_authentication():
+            return
+        token = self.headers.get("Authorization", "").partition(" ")[2]
+        try:
+            if update:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 4096:
+                    raise ValueError("Permintaan perubahan akun tidak valid.")
+                payload = json.loads(self.rfile.read(length))
+                if not isinstance(payload, dict):
+                    raise ValueError("Permintaan perubahan akun tidak valid.")
+                self.send_json(update_user(self.auth_identity, token, payload))
+            else:
+                self.send_json(list_users(self.auth_identity, token))
+        except AuthForbidden as error:
+            self.send_json({"error": str(error), "code": "admin_required"}, status=403)
+        except AuthDenied as error:
+            self.send_json({"error": str(error)}, status=401)
+        except AccessConflict as error:
+            self.send_json({"error": str(error)}, status=409)
+        except (ValueError, json.JSONDecodeError) as error:
+            self.send_json({"error": str(error) or "Permintaan tidak valid."}, status=400)
+        except (AuthConfigurationError, AuthProviderUnavailable):
+            self.send_json({"error": "Data akses belum dapat dimuat. Coba lagi sebentar."}, status=503)
 
     def send_json(self, data: dict, status: int = 200) -> None:
         body = json.dumps(data, ensure_ascii=False, allow_nan=False).encode("utf-8")

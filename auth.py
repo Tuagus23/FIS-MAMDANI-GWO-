@@ -145,6 +145,12 @@ def sign_in_with_identifier(identifier: str, password: str) -> dict[str, str]:
     refresh_token = session.get("refresh_token")
     if not isinstance(access_token, str) or not isinstance(refresh_token, str):
         raise AuthProviderUnavailable
+    from access import read_identity
+
+    session_user = session.get("user")
+    if not isinstance(session_user, dict) or not session_user.get("id"):
+        raise AuthProviderUnavailable
+    read_identity(str(session_user["id"]), access_token)
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 
@@ -181,9 +187,12 @@ def verify_authorization_header(value: str) -> dict[str, str]:
 
     _, _, roster_users = _login_directory()
     roster_user = roster_users.get(email)
+    from access import read_identity
+
+    profile = read_identity(str(user["id"]), token)
     return {
         "id": str(user["id"]),
         "email": email,
         "name": roster_user["name"] if roster_user else email,
-        "role": roster_user["role"] if roster_user else "member",
+        "role": profile["role"],
     }

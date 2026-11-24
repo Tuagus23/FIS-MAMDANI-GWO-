@@ -31,7 +31,12 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const view: View = Object.hasOwn(views, pathname.slice(1))
     ? (pathname.slice(1) as View)
     : "hasil";
-  const personalPage = view === "anggota" || view === "motto";
+  const personalPage =
+    view === "anggota" || view === "motto" || view === "pengguna";
+  const visibleGroups =
+    info?.identity.role === "super_admin"
+      ? [...groups, { label: "Administrasi", items: ["pengguna"] as View[] }]
+      : groups;
   const name = info?.identity.name || "Akun";
   const words = name.split(/\s+/).filter(Boolean);
   const initials = `${words[0]?.[0] || ""}${words.length > 1 ? words[words.length - 1][0] : ""}`;
@@ -115,7 +120,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <nav className="sidebar-navigation" aria-label="Navigasi utama">
-            {groups.map((group) => (
+            {visibleGroups.map((group) => (
               <div className="nav-group" key={group.label}>
                 <p className="sidebar-label">{group.label}</p>
                 {navigation(group.items)}
@@ -177,8 +182,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                     </span>
                     <span className="account-role">
                       {info?.identity.role === "super_admin"
-                        ? "Dosen · administrator"
-                        : "Anggota kelompok"}
+                        ? "Super admin"
+                        : "Pengguna"}
                     </span>
                   </div>
                 </div>
@@ -218,7 +223,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </div>
             <nav className="mobile-nav" aria-label="Navigasi halaman">
               {navigation(
-                groups.flatMap((group) => group.items),
+                visibleGroups.flatMap((group) => group.items),
                 true,
               )}
             </nav>
@@ -274,7 +279,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               </section>
             )}
             {logoutError && <Notice error>{logoutError}</Notice>}
-            {error && (
+            {error && !personalPage && (
               <Notice error>
                 {error}
                 <button className="button button-quiet" onClick={retry}>
