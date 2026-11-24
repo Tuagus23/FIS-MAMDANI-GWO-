@@ -84,7 +84,7 @@ class ApiTests(unittest.TestCase):
     def test_member_admin_routes_return_403_without_revoking_session(self):
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _: MEMBER):
             for payload in [None, {"id": ADMIN_ID, "role": "super_admin"}]:
-                status, body = self.request("/api/admin/users", payload)
+                status, body = self.request("/api/admin-users", payload)
                 self.assertEqual((status, body["code"]), (403, "admin_required"))
             status, body = self.request("/api/datasets")
             self.assertEqual(status, 200)
@@ -105,7 +105,7 @@ class ApiTests(unittest.TestCase):
     def test_anonymous_admin_request_requires_session(self):
         def denied(_): raise AuthDenied("Sesi tidak berlaku.")
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=denied):
-            self.assertEqual(self.request("/api/admin/users")[0], 401)
+            self.assertEqual(self.request("/api/admin-users")[0], 401)
 
 
 if __name__ == "__main__":

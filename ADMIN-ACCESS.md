@@ -5,6 +5,10 @@ analysis pages, run simulations, and download data. `super_admin` also manages
 roles and activation status at `/pengguna`. Creating Auth accounts and resetting
 passwords remain in Supabase Auth.
 
+The admin API uses the single-segment `/api/admin-users` path supported by the
+existing Vercel Python function routing. A nested `/api/admin/users` URL is
+handled by Next.js as 404 on this deployment setup.
+
 ## UI direction
 
 Reading this as an administration view for the group and lecturer in the existing

@@ -53,7 +53,7 @@ class handler(BaseHTTPRequestHandler):
             )
             return
 
-        if request.path == "/api/admin/users":
+        if request.path == "/api/admin-users":
             self.manage_users()
             return
 
@@ -80,7 +80,7 @@ class handler(BaseHTTPRequestHandler):
         if request_path == "/api/login":
             self.sign_in()
             return
-        if request_path == "/api/admin/users":
+        if request_path == "/api/admin-users":
             self.manage_users(update=True)
             return
         if request_path != "/api/simulate":

@@ -41,7 +41,7 @@ export default function UsersView() {
     setLoading(true);
     setError("");
     try {
-      setResult(await api<UsersResponse>("/api/admin/users"));
+      setResult(await api<UsersResponse>("/api/admin-users"));
     } catch (failure) {
       setError(errorMessage(failure));
       if (failure instanceof HttpError && failure.status === 403) {
@@ -56,7 +56,7 @@ export default function UsersView() {
   useEffect(() => {
     if (!isAdmin) return;
     const controller = new AbortController();
-    api<UsersResponse>("/api/admin/users", { signal: controller.signal })
+    api<UsersResponse>("/api/admin-users", { signal: controller.signal })
       .then(setResult)
       .catch((failure) => {
         if (controller.signal.aborted) return;
@@ -113,7 +113,7 @@ export default function UsersView() {
     setError("");
     setMessage("");
     try {
-      await api("/api/admin/users", {
+      await api("/api/admin-users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
