@@ -33,6 +33,11 @@ const viewText = {
     description: "Kenali tim dan peran setiap anggota dalam pengembangan proyek Fuzzy CH WSN.",
     breadcrumb: "Anggota kelompok",
   },
+  motto: {
+    title: "Motto kelompok",
+    description: "Pegangan Kelompok 3 dalam menjalani proses belajar dan mengembangkan proyek.",
+    breadcrumb: "Motto kelompok",
+  },
   simulasi: {
     title: "Simulasi baru",
     description: "Ubah parameter jaringan dan lihat perbandingan tiga protokol pada topologi yang sama.",
@@ -161,7 +166,7 @@ function setView(view, { updateHash = false } = {}) {
   $$(".view-section").forEach((section) => section.classList.toggle("hidden", section.id !== `view-${view}`));
   const activeSection = $(`#view-${view}`);
   activeSection.classList.remove("is-entering");
-  if (previousView !== view && ["gwo", "fis"].includes(view)) {
+  if (previousView !== view && ["gwo", "fis", "motto"].includes(view)) {
     void activeSection.offsetWidth;
     activeSection.classList.add("is-entering");
   }

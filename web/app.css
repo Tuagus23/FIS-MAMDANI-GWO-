@@ -11,6 +11,14 @@
   --red: #b75746;
 }
 
+@font-face {
+  font-family: "DM Serif Display";
+  src: url("/fonts/dm-serif-display-latin-400.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; }
 html { scroll-behavior: auto; overflow-x: clip; }
 body { margin: 0; }
@@ -562,6 +570,67 @@ abbr[title] { text-decoration: none; }
 .fis-visual .data-table { min-width: 420px; font-size: 13px; }
 .fis-visual .data-table th, .fis-visual .data-table td { padding: 8px; }
 .fis-active-heading { margin-top: 22px !important; }
+
+.motto-page { display: grid; gap: 18px; }
+.motto-page.hidden { display: none; }
+.motto-poster {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) 1px minmax(0, .92fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 58px);
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: clamp(30px, 5vw, 68px);
+  background: #193832;
+  color: #f7f6ee;
+}
+.motto-first-thought, .motto-second-thought { position: relative; z-index: 1; min-width: 0; }
+.motto-intro { color: #d4e2dc; font-size: clamp(13px, 1.2vw, 16px); font-weight: 600; letter-spacing: .025em; line-height: 1.5; }
+.motto-word-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .08em;
+  margin-top: 10px;
+  color: #fffdf6;
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: clamp(42px, 5vw, 66px);
+  line-height: .98;
+  letter-spacing: -.035em;
+}
+.motto-slash { padding: 0 .045em; color: #e5ad69; font-family: "DM Serif Display", Georgia, serif; font-size: .84em; }
+.motto-divider { align-self: stretch; position: relative; z-index: 1; background: rgba(247, 246, 238, .22); }
+.motto-divider span { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%) rotate(45deg); background: #e5ad69; }
+.motto-learning { display: grid; gap: 4px; margin-top: 18px; color: #fffdf6; font-size: clamp(23px, 2.7vw, 36px); font-weight: 650; line-height: 1.18; letter-spacing: -.035em; }
+.motto-learning span:last-child { color: #f0c58d; }
+.motto-orbit { position: absolute; z-index: 0; right: -54px; bottom: -94px; width: clamp(180px, 25vw, 290px); color: #dbe8df; pointer-events: none; }
+.motto-signoff { color: #53665f; font-size: 14px; line-height: 1.5; }
+.motto-page.is-entering .motto-poster { animation: motto-poster-enter 280ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes motto-poster-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 760px) {
+  .motto-poster { grid-template-columns: minmax(0, 1fr); gap: 24px; min-height: 0; padding: 30px 25px 42px; }
+  .motto-divider { width: 100%; height: 1px; }
+  .motto-divider span { top: 50%; left: 50%; }
+  .motto-word-pair { font-size: clamp(46px, 12vw, 78px); }
+  .motto-learning { font-size: clamp(28px, 7vw, 42px); }
+  .motto-orbit { right: -64px; bottom: -95px; width: 210px; }
+}
+@media (max-width: 390px) {
+  .motto-poster { padding: 25px 18px 36px; }
+  .motto-intro { font-size: 12px; letter-spacing: .025em; }
+  .motto-word-pair { gap: 0; font-size: 43px; }
+  .motto-learning { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motto-page.is-entering .motto-poster { animation: motto-poster-fade 180ms ease-out both; }
+}
+@keyframes motto-poster-fade { from { opacity: 0; } to { opacity: 1; } }
+
 @media (max-width: 900px) {
   .process-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fis-workbench { grid-template-columns: minmax(0, 1fr); }
