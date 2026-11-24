@@ -5,3 +5,8 @@ node_modules/
 results/
 web/animations.bundle.*
 
+
+.next/
+*.tsbuildinfo
+.env*
+!.env.example

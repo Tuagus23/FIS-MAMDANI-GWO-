@@ -24,27 +24,49 @@ digunakan adalah NumPy dan Matplotlib.
 
 ## Dashboard web
 
-Antarmuka web memakai HTML, CSS, JavaScript, dan Tailwind CSS. Perhitungan simulasi
-tetap memakai mesin Python yang sama dengan CLI. Bangun aset web, lalu jalankan
-server lokal:
+Antarmuka produksi memakai **Next.js App Router, React, TypeScript strict, dan Tailwind CSS**.
+Setiap menu memiliki URL sendiri: `/`, `/validasi`, `/membership`, `/gwo`, `/fis`,
+`/anggota`, `/motto`, dan `/simulasi`. Tautan hash lama serta `/login.html`
+tetap kompatibel.
 
-    npm install
-    npm run build
-    py -m pip install -r requirements.txt
-    py app.py
+Perhitungan simulasi dan autentikasi tetap dilayani API Python yang sama.
+Semua pemeriksaan izin berada di server. Publishable key dikirim lewat
+`/api/auth-config`; secret key dan daftar akun tetap di environment server.
 
-Buka **http://localhost:8000**. Aplikasi produksi dikonfigurasi untuk Vercel:
-`vercel.json` menyajikan aset dari `web/` dan menjalankan API Python.
+Jalankan dari root proyek, dengan Node.js 22 atau lebih baru:
 
-Tailwind CSS dan bundle animasi dibuat sebelum deployment. Jalankan build setelah
-mengubah antarmuka:
+```powershell
+npm install
+py -m pip install -r requirements.txt
+npm run dev:api
+```
 
-    npm install
-    npm run build
+Di terminal kedua:
 
-GSAP ScrollTrigger menangani animasi saat bagian masuk ke viewport, Motion
-menangani hover kartu, dan Lenis menyelaraskan scroll halus dengan ScrollTrigger.
-Animasi dinonaktifkan saat perangkat meminta pengurangan gerak.
+```powershell
+npm run dev
+```
+
+Buka **http://localhost:3000**. API lokal membutuhkan variabel Supabase dan
+roster yang sama dengan konfigurasi server. Untuk menggunakan API produksi
+saat mengembangkan UI lokal, jalankan Next dengan `DASHBOARD_API_ORIGIN`
+berisi origin backend yang Anda kelola; variabel ini hanya dipakai dalam mode development.
+
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+npm start
+```
+
+`src/app` berisi route Next.js, `src/components` komponen React, `src/lib`
+kontrak data dan kalkulasi, serta `public` aset statis. Folder `web` adalah
+antarmuka lama untuk kompatibilitas server Python `app.py`; Vercel membangun
+UI dari `src` dan output `.next`. Ubah UI baru di `src`, bukan di `web`.
+
+GSAP ScrollTrigger dan Lenis mengelola scroll; Motion menangani hover kartu.
+Seluruh listener, chart, dan animasi dibersihkan saat komponen dilepas.
+Preferensi pengurangan gerak dan perangkat sentuh dihormati.
 
 ### Login dan akses rekan
 

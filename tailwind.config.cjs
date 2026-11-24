@@ -1,5 +1,5 @@
 module.exports = {
-  content: ["./web/**/*.html", "./web/**/*.js"],
+  content: ["./src/**/*.{ts,tsx}"],
   theme: {
     fontFamily: { sans: ["Segoe UI", "ui-sans-serif", "system-ui", "sans-serif"] },
     extend: {

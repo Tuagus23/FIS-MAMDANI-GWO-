@@ -1,0 +1,80 @@
+export function NetworkArt() {
+  return (
+    <svg
+      className="motto-network"
+      viewBox="0 0 260 220"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M130 110 48 50M130 110 210 50M130 110 224 125M130 110 195 193M130 110 65 193M130 110 18 125M130 110V20"
+        stroke="currentColor"
+        strokeOpacity=".72"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M48 50 130 20 210 50 224 125 195 193 65 193 18 125Z"
+        stroke="currentColor"
+        strokeOpacity=".42"
+        strokeWidth="1.2"
+      />
+      <circle cx="130" cy="110" r="12" fill="#e5ad69" />
+      <circle
+        cx="48"
+        cy="50"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="210"
+        cy="50"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="224"
+        cy="125"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="195"
+        cy="193"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="65"
+        cy="193"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="18"
+        cy="125"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle
+        cx="130"
+        cy="20"
+        r="7"
+        fill="#193832"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}

@@ -52,18 +52,25 @@ Repo GitHub ini publik, sehingga kode dan data yang sudah ada di repo dapat
 dilihat siapa saja. Web service Render juga dapat diakses publik lewat URL-nya.
 Pilih plan hosting yang sesuai sebelum membuat layanan.
 
-# Vercel
+# Vercel — Next.js + Python
 
-Vercel menyajikan antarmuka statis dari folder `web` melalui CDN. API Python
-berjalan sebagai Vercel Function pada `api/[...path].py`.
+Antarmuka produksi memakai Next.js App Router (React + TypeScript).
+API Python tetap berada di `api/[...path].py` dengan pemeriksaan izin di server.
 
-1. Impor repo `Tuagus23/FIS-MAMDANI-GWO-` di Vercel.
-2. Biarkan **Root Directory** di repo utama dan gunakan pengaturan dari
-   `vercel.json`.
-3. Deploy. `npm run build` membangun Tailwind CSS dan bundle animasi; aset
-   hasilnya disajikan dari `web`.
-4. Setelah deployment selesai, `/api/health` menampilkan status API.
+1. Hubungkan repo `Tuagus23/FIS-MAMDANI-GWO-`, branch produksi `main`.
+2. Root Directory adalah root repo. Framework **Next.js**, build `npm run build`,
+   output `.next`; konfigurasi ini juga tercatat di `vercel.json`.
+3. Pertahankan variabel Supabase dan roster pada environment server. Lihat README.
+4. Push branch lain menghasilkan Preview; push `main` menghasilkan Production.
+5. Cek `/api/health`, `/api/auth-config`, login, dataset, grafik, dan simulasi.
 
-Dashboard publik dan endpoint simulasi dapat diakses oleh siapa pun yang
-memiliki URL deployment. Simulasi dibatasi maksimal 60 node dan 2.000 ronde.
+Halaman baru menggunakan `/login`, `/validasi`, `/membership`, `/gwo`, `/fis`,
+`/anggota`, `/motto`, dan `/simulasi`. `/login.html` dialihkan ke `/login`,
+dan hash lama diarahkan oleh aplikasi ke URL halaman yang sesuai.
 
+Dashboard memerlukan akun yang diizinkan. Simulasi dibatasi maksimal 60 node
+dan 2.000 ronde. Algoritme dan sumber CSV tetap memakai proyek Python yang sama.
+
+Panduan PythonAnywhere/Render di atas adalah jalur server Python lama yang
+menyajikan folder `web`, bukan antarmuka Next.js baru. Untuk pengembangan
+antarmuka baru gunakan `npm run dev` bersama `npm run dev:api`.
