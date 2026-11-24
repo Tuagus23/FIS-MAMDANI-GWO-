@@ -1,9 +1,13 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import type Lenis from "lenis";
 
 export function MotionLayer({ route }: { route: string }) {
+  const scroll = useRef<Lenis | null>(null);
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    if (scroll.current)
+      scroll.current.scrollTo(0, { immediate: true, force: true });
+    else window.scrollTo({ top: 0, behavior: "instant" });
   }, [route]);
   useEffect(() => {
     const media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -40,6 +44,7 @@ export function MotionLayer({ route }: { route: string }) {
           smoothWheel: true,
           syncTouch: false,
         });
+        scroll.current = lenis;
         const ticker = (time: number) => lenis.raf(time * 1000);
         gsap.ticker.add(ticker);
         lenis.on("scroll", ScrollTrigger.update);
@@ -104,6 +109,7 @@ export function MotionLayer({ route }: { route: string }) {
           context.revert();
           gsap.ticker.remove(ticker);
           lenis.destroy();
+          if (scroll.current === lenis) scroll.current = null;
         };
       } catch {
         /* Native scrolling remains available when optional animation modules fail. */
