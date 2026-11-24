@@ -582,6 +582,7 @@ abbr[title] { text-decoration: none; }
 .motto-page { display: grid; gap: 18px; }
 .motto-page.hidden { display: none; }
 .motto-poster {
+  position: relative;
   display: grid;
   align-content: center;
   gap: clamp(24px, 3.5vw, 38px);
@@ -592,7 +593,7 @@ abbr[title] { text-decoration: none; }
   background: #193832;
   color: #f7f6ee;
 }
-.motto-first-thought, .motto-second-thought { min-width: 0; }
+.motto-first-thought, .motto-second-thought, .motto-divider { position: relative; z-index: 1; min-width: 0; }
 .motto-intro { color: #d4e2dc; font-size: 15px; font-weight: 600; letter-spacing: .015em; line-height: 1.5; }
 .motto-word-pair {
   display: flex;
@@ -607,10 +608,11 @@ abbr[title] { text-decoration: none; }
   letter-spacing: -.035em;
 }
 .motto-slash { padding: 0 .045em; color: #e5ad69; font-family: "DM Serif Display", Georgia, serif; font-size: .84em; }
-.motto-divider { position: relative; width: 58px; height: 1px; background: rgba(247, 246, 238, .28); }
+.motto-divider { width: clamp(140px, 22vw, 240px); height: 1px; background: rgba(247, 246, 238, .28); }
 .motto-divider span { position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%) rotate(45deg); background: #e5ad69; }
 .motto-learning { display: grid; gap: 0; margin-top: 12px; color: #fffdf6; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: clamp(48px, 6.2vw, 78px); font-weight: 700; line-height: .98; letter-spacing: -.018em; }
 .motto-learning span:last-child { color: #f0c58d; }
+.motto-network { position: absolute; z-index: 0; right: -24px; bottom: -20px; width: clamp(210px, 28vw, 330px); height: auto; color: #dbe8df; opacity: .3; pointer-events: none; }
 .motto-footer { display: flex; min-height: 104px; align-items: center; justify-content: space-between; gap: 20px; }
 .motto-art { flex: 0 0 104px; width: 104px; aspect-ratio: 1; overflow: hidden; margin: 0; border: 1px solid #d7e2dc; border-radius: 12px; background: #f3c3b5; }
 .motto-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 48%; }
@@ -622,10 +624,11 @@ abbr[title] { text-decoration: none; }
 }
 @media (max-width: 760px) {
   .motto-poster { gap: 26px; min-height: 0; padding: 30px 25px 34px; }
-  .motto-divider { width: 42px; }
+  .motto-divider { width: clamp(130px, 32vw, 190px); }
   .motto-divider span { top: 50%; left: 50%; }
   .motto-word-pair { font-size: clamp(52px, 8vw, 72px); }
   .motto-learning { font-size: clamp(46px, 8vw, 62px); }
+  .motto-network { right: -30px; bottom: -24px; width: 184px; opacity: .18; }
   .motto-footer { min-height: 92px; }
   .motto-art { flex-basis: 92px; width: 92px; }
 }
@@ -634,6 +637,7 @@ abbr[title] { text-decoration: none; }
   .motto-intro { font-size: 14px; }
   .motto-word-pair { gap: 0; font-size: 48px; }
   .motto-learning { font-size: clamp(40px, 11vw, 46px); }
+  .motto-network { width: 160px; opacity: .12; }
   .motto-footer { min-height: 82px; gap: 14px; }
   .motto-art { flex-basis: 82px; width: 82px; }
 }
