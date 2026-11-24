@@ -3,6 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
+  "regions": ["sin1"],
   "functions": {
     "api/[...path].py": {
       "maxDuration": 60

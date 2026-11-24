@@ -1,12 +1,15 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { api, getAuthClient, readResponse } from "@/lib/auth";
+import { getAuthClient, readResponse } from "@/lib/auth";
+import { loadBootstrap } from "@/lib/dashboard-cache";
 import { errorMessage } from "@/lib/data";
 import { BrandMark } from "./brand-mark";
 import { KickedNotice } from "./kicked-notice";
 export function Login() {
+  const router = useRouter();
   const [ready, setReady] = useState(false),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -20,6 +23,7 @@ export function Login() {
   const failureAudio = useRef<HTMLAudioElement>(null);
   const [kicked, setKicked] = useState(false);
   useEffect(() => {
+    router.prefetch("/");
     let active = true;
     const type =
       new URLSearchParams(location.hash.slice(1)).get("type") ||
@@ -34,10 +38,10 @@ export function Login() {
         if (status === "kicked" || sessionStorage.getItem("dashboard:kicked"))
           setKicked(true);
         if (data.session) {
-          await api("/api/datasets");
+          await loadBootstrap(data.session);
           if (!active) return;
           if (type === "invite") setSetup(data.session);
-          else window.location.replace("/");
+          else router.replace("/");
         } else if (type === "invite")
           setMessage(
             "Tautan undangan tidak berlaku atau sudah kedaluwarsa. Minta administrator mengirim tautan baru.",
@@ -52,7 +56,7 @@ export function Login() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [router]);
   async function playFailureAudio() {
     const audio = failureAudio.current;
     if (!audio) return;
@@ -80,7 +84,7 @@ export function Login() {
           throw new Error("Kata sandi yang diketik belum sama.");
         const { error } = await client.auth.updateUser({ password });
         if (error) throw error;
-        window.location.replace("/");
+        router.replace("/");
         return;
       }
       if (identifier.includes("@")) {
@@ -99,7 +103,7 @@ export function Login() {
       if (!data.session)
         throw new Error("NIM/nama terakhir atau kata sandi belum benar.");
       try {
-        await api("/api/datasets");
+        await loadBootstrap(data.session);
       } catch (error) {
         await client.auth.signOut({ scope: "local" });
         throw error;
@@ -107,7 +111,7 @@ export function Login() {
       setSuccess(true);
       sessionStorage.removeItem("dashboard:kicked");
       setMessage("Login berhasil. Membuka dashboard…");
-      window.location.replace("/");
+      router.replace("/");
     } catch (error) {
       setMessage(errorMessage(error));
       if (!setup) await playFailureAudio();

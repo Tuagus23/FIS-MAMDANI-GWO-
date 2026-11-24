@@ -35,23 +35,28 @@ class handler(BaseHTTPRequestHandler):
                 self.send_json({"error": str(error)}, status=503)
             return
 
-        if request.path == "/api/datasets":
+        if request.path in {"/api/datasets", "/api/bootstrap"}:
             if not self.require_authentication():
                 return
-            self.send_json(
-                {
-                    "default": "results",
-                    "identity": {
-                        "id": self.auth_identity["id"],
-                        "name": self.auth_identity["name"],
-                        "role": self.auth_identity["role"],
-                    },
-                    "datasets": [
-                        {"id": key, "label": value["label"], "description": value["description"]}
-                        for key, value in DATASETS.items()
-                    ],
-                }
-            )
+            response = {
+                "default": "results",
+                "identity": {
+                    "id": self.auth_identity["id"],
+                    "name": self.auth_identity["name"],
+                    "role": self.auth_identity["role"],
+                },
+                "datasets": [
+                    {"id": key, "label": value["label"], "description": value["description"]}
+                    for key, value in DATASETS.items()
+                ],
+            }
+            if request.path == "/api/bootstrap":
+                try:
+                    response["data"] = dashboard_data("results")
+                except (OSError, ValueError, json.JSONDecodeError):
+                    response["data"] = None
+                    response["data_error"] = "Data eksperimen belum dapat dimuat. Coba lagi."
+            self.send_json(response)
             return
 
         if request.path == "/api/admin-users":

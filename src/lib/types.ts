@@ -80,6 +80,10 @@ export interface DatasetsResponse {
   datasets: Dataset[];
 }
 export type UserRole = "member" | "super_admin";
+export interface BootstrapResponse extends DatasetsResponse {
+  data: DashboardData | null;
+  data_error?: string;
+}
 export interface DashboardUser {
   id: string;
   login_id: string;

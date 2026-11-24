@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { api, HttpError } from "@/lib/auth";
+import { cachedDirectory, saveDirectory } from "@/lib/dashboard-cache";
 import { errorMessage } from "@/lib/data";
 import type { DashboardUser, UserRole, UsersResponse } from "@/lib/types";
 import { useDashboard } from "./dashboard-provider";
@@ -24,8 +25,11 @@ const timestamp = (value: string) =>
 
 export default function UsersView() {
   const { info, refreshIdentity } = useDashboard();
-  const [result, setResult] = useState<UsersResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const owner = info?.identity.id || "";
+  const [result, setResult] = useState<UsersResponse | null>(
+    () => cachedDirectory(owner) || null,
+  );
+  const [loading, setLoading] = useState(() => !cachedDirectory(owner));
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
@@ -40,11 +44,18 @@ export default function UsersView() {
   const editTrigger = useRef<HTMLButtonElement | null>(null);
   const kickConfirm = useRef<HTMLButtonElement>(null);
   const isAdmin = info?.identity.role === "super_admin";
+  const remember = useCallback(
+    (response: UsersResponse) => {
+      saveDirectory(owner, response);
+      setResult(response);
+    },
+    [owner],
+  );
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      setResult(await api<UsersResponse>("/api/admin-users"));
+      remember(await api<UsersResponse>("/api/admin-users"));
     } catch (failure) {
       setError(errorMessage(failure));
       if (failure instanceof HttpError && failure.status === 403) {
@@ -54,13 +65,13 @@ export default function UsersView() {
     } finally {
       setLoading(false);
     }
-  }, [refreshIdentity]);
+  }, [refreshIdentity, remember]);
 
   useEffect(() => {
     if (!isAdmin) return;
     const controller = new AbortController();
     api<UsersResponse>("/api/admin-users", { signal: controller.signal })
-      .then(setResult)
+      .then(remember)
       .catch((failure) => {
         if (controller.signal.aborted) return;
         setError(errorMessage(failure));
@@ -71,7 +82,7 @@ export default function UsersView() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [isAdmin, refreshIdentity]);
+  }, [isAdmin, refreshIdentity, remember]);
   useEffect(() => {
     if (!isAdmin) return;
     const controller = new AbortController();
@@ -83,7 +94,7 @@ export default function UsersView() {
         const response = await api<UsersResponse>("/api/admin-users", {
           signal: controller.signal,
         });
-        setResult(response);
+        remember(response);
       } catch (failure) {
         if (failure instanceof HttpError && failure.status === 403) {
           setResult(null);
@@ -97,7 +108,7 @@ export default function UsersView() {
       window.clearInterval(interval);
       controller.abort();
     };
-  }, [isAdmin, refreshIdentity]);
+  }, [isAdmin, refreshIdentity, remember]);
   useEffect(() => {
     if (editing) editor.current?.focus();
   }, [editing]);

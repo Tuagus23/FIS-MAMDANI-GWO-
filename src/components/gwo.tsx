@@ -4,17 +4,19 @@ import type { ChartConfiguration } from "chart.js";
 import type { DashboardData, GwoData } from "@/lib/types";
 import { decimal, errorMessage, integer, membershipRows } from "@/lib/data";
 import { chartOptions } from "@/lib/charts";
-import { readResponse } from "@/lib/auth";
+import { cachedGwo, loadGwo } from "@/lib/dashboard-cache";
 import { Chart } from "./chart";
 import { DataDetails, DataTable, Notice, Panel } from "./ui";
 export function GwoView({ data }: { data: DashboardData }) {
-  const [process, setProcess] = useState<GwoData | null>(null);
+  const [process, setProcess] = useState<GwoData | null>(
+    () => cachedGwo() || null,
+  );
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [iteration, setIteration] = useState(0);
   useEffect(() => {
     let active = true;
-    readResponse<GwoData>("/gwo-process-data.json")
+    loadGwo()
       .then((value) => {
         if (active) setProcess(value);
       })

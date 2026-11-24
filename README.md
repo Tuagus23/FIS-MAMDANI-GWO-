@@ -70,6 +70,23 @@ Preferensi pengurangan gerak dan perangkat sentuh dihormati.
 
 ### Login dan akses rekan
 
+Pemuatan dashboard memakai `/api/bootstrap` untuk mengambil identitas, daftar
+dataset, dan eksperimen utama sekaligus. Konfigurasi URL dan publishable key
+Supabase disertakan sebagai JSON publik di HTML produksi; konfigurasi lokal
+tetap dapat memakai `/api/auth-config`. Tidak ada secret key dalam HTML.
+
+Data eksperimen disimpan di memori browser per sesi login. Kembali ke dataset
+yang sudah dibuka tidak mengambil ulang CSV melalui API. Cache dibersihkan saat
+keluar dan dipisahkan berdasarkan identitas sesi; permintaan yang datang
+bersamaan berbagi satu fetch. Riwayat GWO tersimpan juga dipakai kembali.
+Daftar admin dapat langsung menampilkan salinan terakhir sambil memuat kondisi
+terbaru di latar belakang. Pemeriksaan sesi, peran, dan kick tetap berjalan.
+
+Fungsi Vercel ditempatkan di `sin1` dekat database Supabase Singapura. Seluruh
+API terlindungi tetap memakai `no-store`; cache browser ini tidak mengubah
+otorisasi server atau membuat data akun tersedia melalui CDN bersama.
+Uji cache: `npm run test:cache` (Node.js 24 atau lebih baru).
+
 Dashboard memakai Supabase Auth. Form login menerima NIM atau nama terakhir
 yang terdaftar pada roster, lalu langsung membuka dashboard tanpa audio sukses. Tidak
 ada pendaftaran publik. Atur variabel berikut pada **Vercel → Project →

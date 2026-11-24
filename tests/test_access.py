@@ -118,6 +118,22 @@ class ApiTests(unittest.TestCase):
                         run_simulation=lambda payload: {"config": payload, "summary": []}):
             self.assertEqual(self.request("/api/simulate", {"nodes": 10})[0], 200)
 
+    def test_bootstrap_returns_verified_identity_and_default_dataset_together(self):
+        snapshot = {"dataset": {"id": "results"}, "summary": [], "history": []}
+        with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _: MEMBER,
+                        dashboard_data=lambda key: snapshot if key == "results" else self.fail("Wrong dataset")):
+            status, body = self.request("/api/bootstrap")
+            self.assertEqual(status, 200)
+            self.assertEqual(body["identity"]["id"], MEMBER_ID)
+            self.assertEqual(body["data"], snapshot)
+
+    def test_bootstrap_never_reads_data_for_a_kicked_session(self):
+        def kicked(_): raise AuthKicked("Sesi dikeluarkan.")
+        with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=kicked,
+                        dashboard_data=lambda _: self.fail("Unauthorized data read")):
+            status, body = self.request("/api/bootstrap")
+            self.assertEqual((status, body["code"]), (401, "session_kicked"))
+
     def test_revoked_identity_does_not_reach_simulation(self):
         def denied(_): raise AuthForbidden("Akses dinonaktifkan.")
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=denied), \

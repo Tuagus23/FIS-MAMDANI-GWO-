@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from urllib.error import HTTPError, URLError
@@ -77,10 +78,14 @@ def _names() -> dict[str, str]:
 
 def list_users(identity: dict, token: str) -> dict:
     require_super_admin(identity)
-    rows = _request("dashboard_users?select=id,login_id,role,active,updated_at&order=login_id", token)
-    logs = _request("dashboard_access_log?select=*&order=created_at.desc,id.desc&limit=20", token)
     cutoff = (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat().replace("+00:00", "Z")
-    sessions = _request(f"dashboard_sessions?select=user_id&ended_at=is.null&last_seen_at=gte.{cutoff}", token)
+    paths = [
+        "dashboard_users?select=id,login_id,role,active,updated_at&order=login_id",
+        "dashboard_access_log?select=*&order=created_at.desc,id.desc&limit=20",
+        f"dashboard_sessions?select=user_id&ended_at=is.null&last_seen_at=gte.{cutoff}",
+    ]
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        rows, logs, sessions = list(executor.map(lambda path: _request(path, token), paths))
     if not isinstance(rows, list) or not isinstance(logs, list) or not isinstance(sessions, list):
         raise AuthProviderUnavailable
     # RLS can change between verification and this read if another admin revokes access.

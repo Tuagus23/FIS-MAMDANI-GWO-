@@ -7,6 +7,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src next.config.ts",
+    "test:cache": "node --test tests/resource-cache.test.mjs",
     "dev:api": "python scripts/dev_api.py",
     "format": "prettier --write src next.config.ts"
   },

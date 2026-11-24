@@ -1,6 +1,29 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
+const sessionCleanup = new Set<() => void>();
+export function onSessionEnded(callback: () => void) {
+  sessionCleanup.add(callback);
+}
+
+async function authConfiguration() {
+  const embedded = document.getElementById(
+    "dashboard-auth-config",
+  )?.textContent;
+  if (embedded) {
+    try {
+      const config = JSON.parse(embedded);
+      if (
+        typeof config.url === "string" &&
+        typeof config.publishableKey === "string"
+      )
+        return config as { url: string; publishableKey: string };
+    } catch {}
+  }
+  return readResponse<{ url: string; publishableKey: string }>(
+    "/api/auth-config",
+  );
+}
 export class HttpError extends Error {
   constructor(
     message: string,
@@ -12,18 +35,21 @@ export class HttpError extends Error {
 }
 export function getAuthClient(): Promise<SupabaseClient> {
   if (!clientPromise) {
-    clientPromise = readResponse<{ url: string; publishableKey: string }>(
-      "/api/auth-config",
-    )
-      .then((config) =>
-        createClient(config.url, config.publishableKey, {
+    clientPromise = authConfiguration()
+      .then((config) => {
+        const client = createClient(config.url, config.publishableKey, {
           auth: {
             autoRefreshToken: true,
             detectSessionInUrl: true,
             persistSession: true,
           },
-        }),
-      )
+        });
+        client.auth.onAuthStateChange((event) => {
+          if (event === "SIGNED_OUT")
+            for (const clear of sessionCleanup) clear();
+        });
+        return client;
+      })
       .catch((error) => {
         clientPromise = undefined;
         throw error;
