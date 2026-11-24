@@ -1,7 +1,7 @@
 module.exports = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
-    fontFamily: { sans: ["Segoe UI", "ui-sans-serif", "system-ui", "sans-serif"] },
+    fontFamily: { sans: ["Manrope", "Segoe UI", "ui-sans-serif", "system-ui", "sans-serif"] },
     extend: {
       colors: {
         ink: "#193832",

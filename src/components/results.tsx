@@ -86,7 +86,7 @@ export function Results({ data }: { data: DashboardData }) {
       {!data.summary.length ? (
         <Notice>Ringkasan belum tersedia pada dataset ini.</Notice>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="summary-stats">
           {(
             [
               ["lnd", "Umur terpanjang"],
@@ -114,12 +114,15 @@ export function Results({ data }: { data: DashboardData }) {
           })}
         </div>
       )}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="summary-charts">
         <Panel
           title="Ronde kematian node"
           caption="FND: node pertama mati. HND: separuh node mati. LND: node terakhir mati. Milestone yang belum tercapai memakai batas horizon pada grafik dan tanda > di tooltip."
         >
           <Chart config={lifetime} label="Perbandingan FND, HND, dan LND" />
+          <DataDetails title="Lihat nilai milestone">
+            <SummaryTable rows={data.summary} horizon={data.horizon} />
+          </DataDetails>
         </Panel>
         <Panel
           title="Node yang masih hidup"

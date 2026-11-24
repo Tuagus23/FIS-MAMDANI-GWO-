@@ -18,7 +18,7 @@ export default function Motto() {
     timer.current = setTimeout(() => dialog.current?.close(), 2400);
   }
   return (
-    <div className="motto-page is-entering">
+    <div className="motto-page">
       <blockquote className="motto-poster">
         <div className="motto-first-thought">
           <p className="motto-intro">Tidak ada manusia yang</p>

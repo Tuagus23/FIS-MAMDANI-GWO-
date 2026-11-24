@@ -17,7 +17,11 @@ export function Chart({
     let chart: import("chart.js").Chart | undefined;
     import("chart.js/auto")
       .then(({ default: ChartJs }) => {
-        if (!disposed && ref.current) chart = new ChartJs(ref.current, config);
+        if (!disposed && ref.current) {
+          ChartJs.defaults.font.family = 'Manrope, "Segoe UI", sans-serif';
+          ChartJs.defaults.font.size = 13;
+          chart = new ChartJs(ref.current, config);
+        }
       })
       .catch(() => {
         if (!disposed) setError(true);

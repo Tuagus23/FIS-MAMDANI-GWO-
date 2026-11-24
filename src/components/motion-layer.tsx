@@ -1,60 +1,124 @@
 "use client";
 import { useEffect } from "react";
-import { useDashboard } from "./dashboard-provider";
+
 export function MotionLayer({ route }: { route: string }) {
-  const { data } = useDashboard();
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-    let cleanup: (() => void) | undefined;
-    let active = true;
-    if (!reduced.matches)
-      Promise.all([
-        import("gsap"),
-        import("gsap/ScrollTrigger"),
-        import("lenis"),
-      ]).then(([{ gsap }, { ScrollTrigger }, { default: Lenis }]) => {
-        if (!active || reduced.matches) return;
+  }, [route]);
+  useEffect(() => {
+    const media = matchMedia("(prefers-reduced-motion: reduce)");
+    const root = document.querySelector<HTMLElement>(".dashboard-content");
+    if (!root) return;
+    let disposed = false;
+    let generation = 0;
+    let stop: (() => void) | undefined;
+    function setKeyboard() {
+      document.documentElement.dataset.inputMode = "keyboard";
+    }
+    function setPointer() {
+      document.documentElement.dataset.inputMode = "pointer";
+    }
+    document.addEventListener("keydown", setKeyboard, { passive: true });
+    document.addEventListener("pointerdown", setPointer, { passive: true });
+    async function start() {
+      const version = ++generation;
+      stop?.();
+      stop = undefined;
+      if (media.matches) return;
+      try {
+        const [{ gsap }, { ScrollTrigger }, { default: Lenis }] =
+          await Promise.all([
+            import("gsap"),
+            import("gsap/ScrollTrigger"),
+            import("lenis"),
+          ]);
+        if (disposed || media.matches || version !== generation) return;
         gsap.registerPlugin(ScrollTrigger);
-        const lenis = new Lenis({ lerp: 0.12, smoothWheel: true });
+        const lenis = new Lenis({
+          autoRaf: false,
+          lerp: 0.12,
+          smoothWheel: true,
+          syncTouch: false,
+        });
         const ticker = (time: number) => lenis.raf(time * 1000);
-        lenis.on("scroll", ScrollTrigger.update);
         gsap.ticker.add(ticker);
-        const context = gsap.context(() => {
-          document
-            .querySelectorAll(
-              ".view-section .panel, .view-section .membership-card, .view-section .member-card",
+        lenis.on("scroll", ScrollTrigger.update);
+        const seen = new WeakSet<Element>();
+        const context = gsap.context(() => {});
+        let frame = 0;
+        const scan = () => {
+          root!
+            .querySelectorAll<HTMLElement>(
+              ".panel, .member-card, .membership-card",
             )
             .forEach((element) => {
-              gsap.from(element, {
-                opacity: 0,
-                y: 14,
-                duration: 0.28,
-                ease: "power3.out",
-                scrollTrigger: {
+              if (seen.has(element)) return;
+              seen.add(element);
+              if (
+                element.getBoundingClientRect().top <
+                window.innerHeight * 1.05
+              )
+                return;
+              context.add(() => {
+                ScrollTrigger.create({
                   trigger: element,
-                  start: "top 95%",
+                  start: "top 94%",
                   once: true,
-                },
+                  onEnter: () => {
+                    if (
+                      document.documentElement.dataset.inputMode === "keyboard"
+                    )
+                      return;
+                    context.add(() => {
+                      gsap.fromTo(
+                        element,
+                        { opacity: 0.6, y: 8 },
+                        {
+                          opacity: 1,
+                          y: 0,
+                          duration: 0.25,
+                          ease: "power3.out",
+                          clearProps: "opacity,transform",
+                        },
+                      );
+                    });
+                  },
+                });
               });
             });
-        });
-        cleanup = () => {
+          ScrollTrigger.refresh();
+        };
+        const schedule = () => {
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(scan);
+        };
+        const observer = new MutationObserver(schedule);
+        observer.observe(root!, { childList: true, subtree: true });
+        const resize = new ResizeObserver(schedule);
+        resize.observe(root!);
+        schedule();
+        stop = () => {
+          observer.disconnect();
+          resize.disconnect();
+          cancelAnimationFrame(frame);
           context.revert();
           gsap.ticker.remove(ticker);
           lenis.destroy();
         };
-      });
-    const onChange = () => {
-      cleanup?.();
-      cleanup = undefined;
-    };
-    reduced.addEventListener("change", onChange);
+      } catch {
+        /* Native scrolling remains available when optional animation modules fail. */
+      }
+    }
+    void start();
+    media.addEventListener("change", start);
     return () => {
-      active = false;
-      cleanup?.();
-      reduced.removeEventListener("change", onChange);
+      disposed = true;
+      generation += 1;
+      stop?.();
+      media.removeEventListener("change", start);
+      document.removeEventListener("keydown", setKeyboard);
+      document.removeEventListener("pointerdown", setPointer);
     };
-  }, [route, data]);
+  }, []);
   return null;
 }

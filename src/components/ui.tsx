@@ -55,8 +55,8 @@ export function Panel({
   return (
     <motion.article
       className="panel min-w-0"
-      whileHover={hover ? { y: -2, scale: 1.005 } : undefined}
-      transition={{ type: "spring", stiffness: 460, damping: 34 }}
+      whileHover={hover ? { borderColor: "#b5c8bd" } : undefined}
+      transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
     >
       <div className="panel-heading">
         <h2 className="panel-title">{title}</h2>

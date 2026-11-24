@@ -17,9 +17,10 @@ const Simulation = dynamic(() =>
 const Team = dynamic(() => import("./team"));
 const Motto = dynamic(() => import("./motto"));
 export function DashboardView({ view }: { view: View }) {
-  const { data, datasetId } = useDashboard();
+  const { data, datasetId, loading } = useDashboard();
   return (
     <section
+      key={view}
       id={`view-${view}`}
       className={`view-section space-y-5 ${["fis", "gwo"].includes(view) ? "process-page" : ""}`}
       aria-labelledby="pageTitle"
@@ -44,7 +45,34 @@ export function DashboardView({ view }: { view: View }) {
             <Simulation data={data} />
           )}
         </div>
+      ) : loading ? (
+        <DashboardSkeleton />
       ) : null}
     </section>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="dashboard-skeleton" aria-hidden="true">
+      <div className="skeleton-stats">
+        {[0, 1, 2, 3].map((item) => (
+          <div key={item}>
+            <span />
+            <strong />
+            <span />
+          </div>
+        ))}
+      </div>
+      <div className="skeleton-charts">
+        {[0, 1].map((item) => (
+          <div key={item}>
+            <span />
+            <p />
+            <div />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

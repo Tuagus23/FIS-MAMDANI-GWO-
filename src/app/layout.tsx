@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./dashboard.css";
 import "lenis/dist/lenis.css";
 export const metadata: Metadata = {
   title: { default: "Fuzzy CH WSN", template: "%s · Fuzzy CH WSN" },
