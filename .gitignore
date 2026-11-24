@@ -10,3 +10,4 @@ web/animations.bundle.*
 *.tsbuildinfo
 .env*
 !.env.example
+next-env.d.ts
