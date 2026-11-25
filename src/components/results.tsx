@@ -138,7 +138,10 @@ export function Results({ data }: { data: DashboardData }) {
           station.
         </p>
       </Panel>
-      <DataDetails title="Glosarium metrik dan istilah">
+      <DataDetails
+        title="Glosarium metrik dan istilah"
+        className="glossary-details"
+      >
         <dl className="metric-guide">
           {Object.entries({
             FND: "Ronde saat node pertama kehabisan energi.",

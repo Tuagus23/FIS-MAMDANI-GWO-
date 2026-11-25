@@ -91,6 +91,10 @@ export interface DashboardUser {
   role: UserRole;
   active: boolean;
   logged_in: boolean;
+  login_started_at: string | null;
+  last_seen_at: string | null;
+  current_page: string | null;
+  session_count: number;
   updated_at: string;
 }
 export interface AccessActivity {
@@ -108,6 +112,7 @@ export interface AccessActivity {
 export interface UsersResponse {
   users: DashboardUser[];
   activity: AccessActivity[];
+  server_time: string;
 }
 export interface SimulationConfig {
   nodes: number;

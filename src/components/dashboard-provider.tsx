@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { api, getAuthClient, redirectToLogin } from "@/lib/auth";
 import { errorMessage } from "@/lib/data";
 import {
@@ -49,10 +50,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0);
   const [simulation, saveSimulation] = useState<SimulationResult | null>(null);
   const identityRequest = useRef<Promise<void> | null>(null);
-  const refreshIdentity = useCallback(() => {
-    if (identityRequest.current) return identityRequest.current;
-    const request = api<Pick<DatasetsResponse, "identity">>("/api/session")
+  const identityPage = useRef("");
+  const pathname = usePathname();
+  const refreshIdentity = useCallback(function refresh(): Promise<void> {
+    if (identityRequest.current)
+      return identityRequest.current.then(() => {
+        if (identityPage.current !== window.location.pathname) return refresh();
+      });
+    identityPage.current = window.location.pathname;
+    const request = api<Pick<DatasetsResponse, "identity">>(
+      `/api/session?page=${encodeURIComponent(identityPage.current)}`,
+    )
       .then(({ identity }) => {
+        setAuthError("");
         setInfo((current) =>
           current &&
           current.identity.role === identity.role &&
@@ -82,9 +92,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   }, [refreshIdentity]);
   const authenticated = info !== null;
   useEffect(() => {
+    if (authenticated) void refreshIdentity();
+  }, [authenticated, pathname, refreshIdentity]);
+  useEffect(() => {
     if (!authenticated) return;
     const interval = window.setInterval(() => {
-      void refreshIdentity();
+      if (document.visibilityState === "visible") void refreshIdentity();
     }, 20000);
     const resume = () => {
       if (document.visibilityState === "visible") void refreshIdentity();

@@ -281,7 +281,7 @@ a:focus-visible {
 }
 .metric-guide > div {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-columns: minmax(100px, 0.24fr) minmax(0, 1fr);
   gap: 12px;
   border-bottom: 1px solid #e4eae5;
   padding: 13px 0;
@@ -291,14 +291,14 @@ a:focus-visible {
 }
 .metric-guide dt {
   color: #2b6256;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 .metric-guide dd {
   margin: 0;
   color: #53665f;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.75;
 }
 .membership-card {
   min-width: 0;
@@ -1563,7 +1563,7 @@ abbr[title] {
 }
 .fis-workbench {
   display: grid;
-  grid-template-columns: minmax(230px, 0.68fr) minmax(0, 1.32fr);
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
   gap: 28px;
   margin-top: 20px;
 }
@@ -1605,7 +1605,7 @@ abbr[title] {
   margin-top: 6px;
 }
 .fis-result .data-table {
-  min-width: 540px;
+  min-width: 480px;
 }
 .fis-workbench .button {
   justify-content: center;
@@ -1678,7 +1678,7 @@ abbr[title] {
 }
 .fis-visual-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   margin-top: 19px;
 }
@@ -1686,8 +1686,8 @@ abbr[title] {
   min-width: 0;
 }
 .fis-visual + .fis-visual {
-  border-left: 1px solid #e5eae6;
-  padding-left: 20px;
+  border-top: 1px solid #e5eae6;
+  padding-top: 22px;
 }
 .fis-visual h3 {
   margin-top: 0;
@@ -2017,7 +2017,7 @@ abbr[title] {
     grid-template-columns: minmax(0, 1fr);
   }
   .fis-workbench .data-table {
-    min-width: 560px;
+    min-width: 480px;
   }
 }
 @media (max-width: 600px) {

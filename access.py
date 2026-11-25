@@ -14,6 +14,9 @@ class AccessConflict(Exception):
     pass
 
 
+DASHBOARD_PAGES = frozenset({"/", "/validasi", "/membership", "/gwo", "/fis", "/simulasi", "/anggota", "/motto", "/pengguna"})
+
+
 def _request(path: str, token: str, payload: dict | None = None) -> object:
     base_url, key, _ = _settings()
     request = Request(
@@ -45,12 +48,15 @@ def _request(path: str, token: str, payload: dict | None = None) -> object:
         raise AuthProviderUnavailable from error
 
 
-def read_identity(user_id: str, token: str) -> dict:
+def read_identity(user_id: str, token: str, current_page: str | None = None) -> dict:
     try:
         normalized_id = str(UUID(user_id))
     except ValueError as error:
         raise AuthDenied("Sesi tidak berlaku. Silakan masuk kembali.") from error
-    profile = _request("rpc/dashboard_session_identity", token, {})
+    if current_page is not None and current_page not in DASHBOARD_PAGES:
+        raise ValueError("Halaman dashboard tidak valid.")
+    profile = (_request("rpc/dashboard_session_presence", token, {"page_path": current_page})
+               if current_page is not None else _request("rpc/dashboard_session_identity", token, {}))
     if not isinstance(profile, dict):
         raise AuthProviderUnavailable
     if profile.get("state") == "kicked":
@@ -78,11 +84,12 @@ def _names() -> dict[str, str]:
 
 def list_users(identity: dict, token: str) -> dict:
     require_super_admin(identity)
-    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat().replace("+00:00", "Z")
+    now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(seconds=90)).isoformat().replace("+00:00", "Z")
     paths = [
         "dashboard_users?select=id,login_id,role,active,updated_at&order=login_id",
         "dashboard_access_log?select=*&order=created_at.desc,id.desc&limit=20",
-        f"dashboard_sessions?select=user_id&ended_at=is.null&last_seen_at=gte.{cutoff}",
+        f"dashboard_sessions?select=user_id,started_at,last_seen_at,current_page&ended_at=is.null&last_seen_at=gte.{cutoff}&order=last_seen_at.desc",
     ]
     with ThreadPoolExecutor(max_workers=3) as executor:
         rows, logs, sessions = list(executor.map(lambda path: _request(path, token), paths))
@@ -92,11 +99,20 @@ def list_users(identity: dict, token: str) -> dict:
     if not any(row["id"] == identity["id"] and row["active"] and row["role"] == "super_admin" for row in rows):
         raise AuthForbidden("Hak super admin Anda telah berubah. Muat ulang halaman.")
     names = _names()
-    online = {row["user_id"] for row in sessions}
-    users = [{**row, "name": names.get(row["login_id"], row["login_id"]),
-              "logged_in": row["active"] and row["id"] in online} for row in rows]
+    by_user: dict[str, list[dict]] = {}
+    for session in sessions:
+        by_user.setdefault(session["user_id"], []).append(session)
+    users = []
+    for row in rows:
+        live = by_user.get(row["id"], []) if row["active"] else []
+        latest = max(live, key=lambda item: item["last_seen_at"]) if live else None
+        starts = [datetime.fromisoformat(item["started_at"].replace("Z", "+00:00")) for item in live]
+        users.append({**row, "name": names.get(row["login_id"], row["login_id"]),
+                      "logged_in": bool(live), "login_started_at": min(starts).isoformat() if starts else None,
+                      "last_seen_at": latest["last_seen_at"] if latest else None,
+                      "current_page": latest["current_page"] if latest else None, "session_count": len(live)})
     by_id = {row["id"]: row["name"] for row in users}
-    return {"users": users, "activity": [
+    return {"users": users, "server_time": now.isoformat(), "activity": [
         {**row, "actor_name": by_id.get(row["actor_id"], "Akun admin"),
          "target_name": by_id.get(row["target_id"], "Akun pengguna")}
         for row in logs

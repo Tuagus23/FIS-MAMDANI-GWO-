@@ -96,6 +96,9 @@ export function ValidationView({ data }: { data: DashboardData }) {
     }),
     [data.validation_horizon, seeds, metric],
   );
+  const conclusionRows = data.validation.filter(
+    (row) => row.metric !== "lifetime_index",
+  );
   const conclusion = (["FND", "HND", "LND", "PDR_pct"] as const)
     .map((key) => {
       const row = data.validation.find((r) => r.metric === key);
@@ -152,11 +155,63 @@ export function ValidationView({ data }: { data: DashboardData }) {
           <Chart config={means} label="Rata-rata metrik validasi" />
         </Panel>
         <Panel title="Kesimpulan validasi">
-          <p className="validation-conclusion">{conclusion}.</p>
+          <p className="sr-only">{conclusion}.</p>
+          <div className="validation-wins-key" aria-hidden="true">
+            <span>
+              <i className="is-fuzzy" />
+              FUZZY
+            </span>
+            <span>
+              <i className="is-tie" />
+              Seri
+            </span>
+            <span>
+              <i className="is-gwo" />
+              GWO
+            </span>
+          </div>
+          <div className="validation-wins">
+            {conclusionRows.map((row) => (
+              <section className="validation-win-row" key={row.metric}>
+                <div className="validation-win-label">
+                  <strong>
+                    {row.metric === "PDR_pct" ? "PDR" : row.metric}
+                  </strong>
+                  <span>
+                    {row.GWO_wins === row.FUZZY_wins
+                      ? "Seimbang"
+                      : `${row.GWO_wins > row.FUZZY_wins ? "GWO" : "FUZZY"} unggul`}{" "}
+                    · {row.seed_count} seed
+                  </span>
+                </div>
+                <div
+                  className="validation-win-bar"
+                  role="img"
+                  aria-label={`${row.metric}: FUZZY ${row.FUZZY_wins}, seri ${row.ties}, GWO ${row.GWO_wins} dari ${row.seed_count} seed`}
+                >
+                  {[
+                    { count: row.FUZZY_wins, tone: "is-fuzzy" },
+                    { count: row.ties, tone: "is-tie" },
+                    { count: row.GWO_wins, tone: "is-gwo" },
+                  ]
+                    .filter((part) => part.count > 0)
+                    .map((part) => (
+                      <span
+                        key={part.tone}
+                        className={part.tone}
+                        style={{ flex: part.count }}
+                      >
+                        {part.count}
+                      </span>
+                    ))}
+                </div>
+              </section>
+            ))}
+          </div>
           <p className="panel-caption">
-            Nilai FND, HND, LND, PDR, dan indeks umur yang lebih besar dihitung
-            lebih baik. Milestone yang belum tercapai dibandingkan pada batas
-            horizon.
+            Setiap segmen menunjukkan jumlah seed yang dimenangi. Nilai metrik
+            lebih besar dihitung lebih baik; milestone tersensor dibandingkan
+            pada batas horizon.
           </p>
         </Panel>
       </div>

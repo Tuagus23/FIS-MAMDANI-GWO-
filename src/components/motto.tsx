@@ -44,23 +44,44 @@ export default function Motto() {
         <p className="motto-signoff">
           Pegangan Kelompok 3 · Pengantar Komputasi Lunak
         </p>
-        <button
-          ref={trigger}
-          className="motto-art"
-          type="button"
-          aria-label="Buka kejutan tersembunyi"
-          aria-haspopup="dialog"
-          aria-controls="mottoSurprise"
-          onClick={(e) => open(e.detail)}
-        >
-          <img
-            src="/images/motto/learning-atmosphere.jpg"
-            width={493}
-            height={512}
-            alt=""
-            loading="lazy"
-          />
-        </button>
+        <div className="motto-easter-egg">
+          <span id="mottoEggHint" className="motto-egg-hint">
+            jangan di klik
+            <svg
+              width="64"
+              height="32"
+              viewBox="0 0 64 32"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M2 6c16 0 22 22 52 14m-8-6 10 5-6 9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <button
+            ref={trigger}
+            className="motto-art"
+            type="button"
+            aria-label="Buka kejutan tersembunyi"
+            aria-haspopup="dialog"
+            aria-controls="mottoSurprise"
+            aria-describedby="mottoEggHint"
+            onClick={(e) => open(e.detail)}
+          >
+            <img
+              src="/images/motto/learning-atmosphere.jpg"
+              width={493}
+              height={512}
+              alt=""
+              loading="lazy"
+            />
+          </button>
+        </div>
       </div>
       <dialog
         ref={dialog}

@@ -19,6 +19,17 @@ Purpose: state indication and continuity while moving through data. ENERGY 2 / R
 - Below-fold panels reveal once when scrolling; their data remains visible by default. Hover only changes control feedback and panel boundary, without scaling charts or moving data under the pointer.
 - Reduced motion removes spatial transitions. No loops beyond a truthful pending indicator.
 
+## Data-reading refinements
+
+- The top bar uses a pale forest tint to separate navigation and account context from white data panels; secondary text is darkened for contrast on the tint.
+- Glossary terms receive a dedicated column wide enough for Indonesian multiword terms. Tables keep tabular figures, sticky headers inside scrollable details, keyboard focus, and a visible native scrollbar.
+- Membership cards align at their top edges and size independently when their data disclosures open.
+- Validation conclusions show actual FUZZY, tie, and GWO seed counts as labeled segments. These are source data, not decorative progress indicators.
+- The fitness chart uses an explicitly disclosed focused Y range and four decimal places so the observed small changes remain readable without altering their values.
+- FIS inputs, input memberships, aggregated output, and active rules are grouped by the calculation sequence. Input edits update the existing chart instance immediately; invalid drafts show a recovery message rather than a stale score.
+- The motto has the one authored typographic moment: a single 250ms word entrance with 60–80ms staggering, followed by static readable text. Purpose: delight on this occasional group page. Keyboard navigation is immediate and reduced motion keeps opacity only. The supplied image and network diagram remain in place.
+- The small curved arrow beside the motto image labels the existing user-requested Easter egg; it does not create a new action.
+
 ## Boundaries
 
 Do not change experiment data, algorithm math, access rules, CSV meaning, or supplied group identity as part of visual polish. Use the existing photos and diagrams; add no invented claims or statistics.

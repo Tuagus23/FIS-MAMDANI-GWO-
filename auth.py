@@ -158,7 +158,7 @@ def sign_in_with_identifier(identifier: str, password: str) -> dict[str, str]:
     return {"access_token": access_token, "refresh_token": refresh_token}
 
 
-def verify_authorization_header(value: str) -> dict[str, str]:
+def verify_authorization_header(value: str, current_page: str | None = None) -> dict[str, str]:
     base_url, publishable_key, allowed_emails = _settings()
     scheme, separator, token = value.partition(" ")
     if scheme.casefold() != "bearer" or not separator or not 32 <= len(token) <= 16_384:
@@ -193,7 +193,8 @@ def verify_authorization_header(value: str) -> dict[str, str]:
     roster_user = roster_users.get(email)
     from access import read_identity
 
-    profile = read_identity(str(user["id"]), token)
+    profile = (read_identity(str(user["id"]), token, current_page)
+               if current_page is not None else read_identity(str(user["id"]), token))
     return {
         "id": str(user["id"]),
         "email": email,

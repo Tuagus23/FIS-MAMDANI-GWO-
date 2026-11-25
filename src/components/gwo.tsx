@@ -7,6 +7,11 @@ import { chartOptions } from "@/lib/charts";
 import { cachedGwo, loadGwo } from "@/lib/dashboard-cache";
 import { Chart } from "./chart";
 import { DataDetails, DataTable, Notice, Panel } from "./ui";
+const fitnessNumber = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(value);
 export function GwoView({ data }: { data: DashboardData }) {
   const [process, setProcess] = useState<GwoData | null>(
     () => cachedGwo() || null,
@@ -27,8 +32,15 @@ export function GwoView({ data }: { data: DashboardData }) {
       active = false;
     };
   }, [attempt]);
-  const fitness = useMemo<ChartConfiguration>(
-    () => ({
+  const fitness = useMemo<ChartConfiguration>(() => {
+    const values = process?.history.flatMap((row) => [
+      row.best_fitness,
+      row.mean_fitness,
+    ]) || [0];
+    const low = Math.min(...values),
+      high = Math.max(...values);
+    const padding = Math.max((high - low) * 0.2, 0.0005);
+    return {
       type: "line",
       data: {
         labels: process?.history.map((row) => `Gen ${row.iteration}`) || [],
@@ -39,6 +51,8 @@ export function GwoView({ data }: { data: DashboardData }) {
             borderColor: "#00765e",
             pointRadius: 3,
             borderWidth: 2.5,
+            stepped: true,
+            pointStyle: "circle",
           },
           {
             label: "Rata-rata populasi",
@@ -47,13 +61,37 @@ export function GwoView({ data }: { data: DashboardData }) {
             pointRadius: 2,
             borderDash: [5, 4],
             borderWidth: 2,
+            pointStyle: "rectRot",
           },
         ],
       },
-      options: chartOptions("Fitness"),
-    }),
-    [process],
-  );
+      options: {
+        ...chartOptions("Fitness"),
+        plugins: {
+          ...chartOptions("").plugins,
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `${ctx.dataset.label}: ${fitnessNumber(Number(ctx.parsed.y))}`,
+            },
+          },
+        },
+        scales: {
+          ...chartOptions("").scales,
+          y: {
+            ...chartOptions("Fitness").scales?.y,
+            beginAtZero: false,
+            min: Math.max(0, low - padding),
+            max: high + padding,
+            ticks: {
+              maxTicksLimit: 6,
+              callback: (value) => fitnessNumber(Number(value)),
+            },
+          },
+        },
+      },
+    };
+  }, [process]);
   if (!process)
     return (
       <Notice error={!!error}>
@@ -148,20 +186,49 @@ export function GwoView({ data }: { data: DashboardData }) {
         title="Konvergensi fitness"
         caption="Nilai lebih tinggi lebih baik. Garis terbaik merangkum solusi global terbaik sampai generasi itu."
       >
+        <dl className="fitness-summary">
+          <div>
+            <dt>Awal</dt>
+            <dd>{fitnessNumber(process.history[0].best_fitness)}</dd>
+          </div>
+          <div>
+            <dt>Terbaik akhir</dt>
+            <dd>{fitnessNumber(process.history.at(-1)!.best_fitness)}</dd>
+          </div>
+          <div>
+            <dt>Perubahan</dt>
+            <dd>
+              +
+              {fitnessNumber(
+                process.history.at(-1)!.best_fitness -
+                  process.history[0].best_fitness,
+              )}
+            </dd>
+          </div>
+        </dl>
         <Chart
           config={fitness}
           label="Fitness terbaik dan rata-rata populasi"
         />
+        <p className="table-footnote">
+          Sumbu Y diperbesar ke rentang fitness yang diamati, tidak dimulai dari
+          nol. Nilai ditampilkan dengan empat angka desimal agar perubahan kecil
+          terbaca.
+        </p>
         <DataDetails title="Lihat fitness per generasi">
           <DataTable
             rows={process.history}
+            label="Fitness per generasi, gunakan tombol panah untuk menggulir"
             columns={[
               { label: "Generasi", render: (r) => r.iteration },
               {
                 label: "Fitness terbaik",
-                render: (r) => decimal(r.best_fitness),
+                render: (r) => fitnessNumber(r.best_fitness),
               },
-              { label: "Rata-rata", render: (r) => decimal(r.mean_fitness) },
+              {
+                label: "Rata-rata populasi",
+                render: (r) => fitnessNumber(r.mean_fitness),
+              },
             ]}
           />
         </DataDetails>
@@ -194,15 +261,25 @@ export function GwoView({ data }: { data: DashboardData }) {
               render: (r) =>
                 `${({ alpha: "Alpha · terbaik", beta: "Beta · kedua", delta: "Delta · ketiga" } as Record<string, string>)[r.role] || `Kandidat rank ${r.rank}`} · Wolf ${r.wolf}`,
             },
-            { label: "Fitness", render: (r) => decimal(r.fitness) },
+            { label: "Fitness", render: (r) => fitnessNumber(r.fitness) },
             {
               label: "Vektor 13 koordinat",
+              align: "start",
               render: (r) => (
                 <DataDetails title="Lihat posisi">
-                  <p className="process-vector">
-                    {r.position
-                      .map((value, i) => `x${i + 1}=${decimal(value)}`)
-                      .join(" · ")}
+                  <dl className="wolf-vector-grid">
+                    {r.position.map((value, i) => (
+                      <div key={i}>
+                        <dt>
+                          x<sub>{i + 1}</sub>
+                        </dt>
+                        <dd>{decimal(value)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="table-footnote">
+                    x₁–x₃: energi · x₄–x₈: jarak · x₉–x₁₃: tetangga. Semua
+                    koordinat berada pada rentang 0–1.
                   </p>
                 </DataDetails>
               ),

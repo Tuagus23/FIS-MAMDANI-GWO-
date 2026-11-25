@@ -19,6 +19,40 @@ VERSION = "2026-11-25T01:00:00+00:00"
 
 
 class AccessTests(unittest.TestCase):
+    def test_presence_rejects_arbitrary_paths_before_database(self):
+        with patch.object(access, "_request") as provider, self.assertRaises(ValueError):
+            access.read_identity(MEMBER_ID, "token", "/outside?secret=value")
+        provider.assert_not_called()
+
+    def test_presence_preserves_verified_identity_and_sends_only_current_page(self):
+        profile = {"id": MEMBER_ID, "role": "member", "active": True, "state": "open"}
+        with patch.object(access, "_request", return_value=profile) as provider:
+            self.assertEqual(access.read_identity(MEMBER_ID, "token", "/fis"), profile)
+        provider.assert_called_once_with("rpc/dashboard_session_presence", "token", {"page_path": "/fis"})
+
+    def test_directory_uses_earliest_live_start_and_latest_page_but_hides_offline_details(self):
+        rows = [{**ADMIN, "login_id": "admin", "active": True}, {**MEMBER, "login_id": "member", "active": True},
+                {"id": "inactive", "login_id": "inactive", "active": False, "role": "member"}]
+        sessions = [
+            {"user_id": MEMBER_ID, "started_at": "2026-11-25T01:00:00Z", "last_seen_at": "2026-11-25T02:00:00Z", "current_page": "/fis"},
+            {"user_id": MEMBER_ID, "started_at": "2026-11-25T00:00:00Z", "last_seen_at": "2026-11-25T01:59:50Z", "current_page": "/gwo"},
+            {"user_id": "inactive", "started_at": "2026-11-25T00:00:00Z", "last_seen_at": "2026-11-25T02:00:00Z", "current_page": "/motto"},
+        ]
+        def provider(path, token):
+            return sessions if path.startswith("dashboard_sessions?") else [] if path.startswith("dashboard_access_log?") else rows
+        with patch.object(access, "_request", side_effect=provider), patch.object(access, "_names", return_value={}):
+            result = access.list_users(ADMIN, "token")
+        member = next(row for row in result["users"] if row["id"] == MEMBER_ID)
+        self.assertTrue(member["logged_in"])
+        self.assertEqual(member["current_page"], "/fis")
+        self.assertEqual(member["login_started_at"], "2026-11-25T00:00:00+00:00")
+        self.assertEqual(member["session_count"], 2)
+        for row in result["users"]:
+            if row["id"] != MEMBER_ID:
+                self.assertFalse(row["logged_in"])
+                self.assertIsNone(row["current_page"])
+                self.assertIsNone(row["login_started_at"])
+
     def test_void_rpc_response_is_successful(self):
         class Response:
             def __enter__(self): return self
@@ -117,6 +151,11 @@ class ApiTests(unittest.TestCase):
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _: MEMBER,
                         run_simulation=lambda payload: {"config": payload, "summary": []}):
             self.assertEqual(self.request("/api/simulate", {"nodes": 10})[0], 200)
+
+    def test_page_heartbeat_retains_authentication_and_validates_page(self):
+        with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _, current_page: MEMBER if current_page == "/fis" else self.fail("Unexpected page")):
+            self.assertEqual(self.request("/api/session?page=%2Ffis")[0], 200)
+            self.assertEqual(self.request("/api/session?page=%2Foutside")[0], 400)
 
     def test_bootstrap_returns_verified_identity_and_default_dataset_together(self):
         snapshot = {"dataset": {"id": "results"}, "summary": [], "history": []}

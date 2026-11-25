@@ -11,16 +11,25 @@ export function Chart({
   compact?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const instance = useRef<import("chart.js").Chart | undefined>(undefined);
+  const chartType = useRef(config.type);
   const [error, setError] = useState(false);
   useEffect(() => {
     let disposed = false;
-    let chart: import("chart.js").Chart | undefined;
     import("chart.js/auto")
       .then(({ default: ChartJs }) => {
         if (!disposed && ref.current) {
           ChartJs.defaults.font.family = 'Manrope, "Segoe UI", sans-serif';
           ChartJs.defaults.font.size = 13;
-          chart = new ChartJs(ref.current, config);
+          if (instance.current && chartType.current === config.type) {
+            instance.current.data = config.data;
+            instance.current.options = config.options || {};
+            instance.current.update("none");
+          } else {
+            instance.current?.destroy();
+            instance.current = new ChartJs(ref.current, config);
+            chartType.current = config.type;
+          }
         }
       })
       .catch(() => {
@@ -28,9 +37,15 @@ export function Chart({
       });
     return () => {
       disposed = true;
-      chart?.destroy();
     };
   }, [config]);
+  useEffect(
+    () => () => {
+      instance.current?.destroy();
+      instance.current = undefined;
+    },
+    [],
+  );
   return (
     <>
       {error && (

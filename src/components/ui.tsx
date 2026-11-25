@@ -5,23 +5,32 @@ import type { Protocol } from "@/lib/types";
 export interface Column<T> {
   label: ReactNode;
   render: (row: T) => ReactNode;
+  align?: "start" | "end";
 }
 export function DataTable<T>({
   rows,
   columns,
+  label = "Tabel data",
 }: {
   rows: T[];
   columns: Column<T>[];
+  label?: string;
 }) {
   if (!rows.length)
     return <p className="table-footnote">Tidak ada data untuk ditampilkan.</p>;
   return (
-    <div className="table-wrap">
+    <div
+      className="table-wrap"
+      tabIndex={0}
+      role="region"
+      aria-label={label}
+      data-lenis-prevent
+    >
       <table className="data-table">
         <thead>
           <tr>
             {columns.map((column, i) => (
-              <th key={i} scope="col">
+              <th key={i} scope="col" data-align={column.align}>
                 {column.label}
               </th>
             ))}
@@ -31,7 +40,9 @@ export function DataTable<T>({
           {rows.map((row, i) => (
             <tr key={i}>
               {columns.map((column, j) => (
-                <td key={j}>{column.render(row)}</td>
+                <td key={j} data-align={column.align}>
+                  {column.render(row)}
+                </td>
               ))}
             </tr>
           ))}
@@ -91,18 +102,20 @@ export function ProtocolName({ name }: { name: Protocol }) {
 export function DataDetails({
   title,
   children,
+  className = "",
 }: {
   title: string;
   children: ReactNode;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <details
-      className="chart-data-details"
+      className={`chart-data-details ${className}`}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary>{title}</summary>
-      {open && children}
+      {open && <div className="details-content">{children}</div>}
     </details>
   );
 }

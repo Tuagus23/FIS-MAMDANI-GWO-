@@ -17,7 +17,7 @@ from auth import (
     verify_authorization_header,
 )
 from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
-from access import AccessConflict, end_session, kick_member, list_users, update_user
+from access import DASHBOARD_PAGES, AccessConflict, end_session, kick_member, list_users, update_user
 
 
 class handler(BaseHTTPRequestHandler):
@@ -64,7 +64,11 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if request.path == "/api/session":
-            if self.require_authentication():
+            page = parse_qs(request.query).get("page", [None])[0]
+            if page is not None and page not in DASHBOARD_PAGES:
+                self.send_json({"error": "Halaman dashboard tidak valid."}, status=400)
+                return
+            if self.require_authentication(current_page=page):
                 self.send_json({"identity": {key: self.auth_identity[key] for key in ("id", "name", "role")}})
             return
 
@@ -185,9 +189,11 @@ class handler(BaseHTTPRequestHandler):
                 status=503,
             )
 
-    def require_authentication(self) -> bool:
+    def require_authentication(self, current_page: str | None = None) -> bool:
         try:
-            self.auth_identity = verify_authorization_header(self.headers.get("Authorization", ""))
+            header = self.headers.get("Authorization", "")
+            self.auth_identity = (verify_authorization_header(header, current_page=current_page)
+                                  if current_page is not None else verify_authorization_header(header))
             return True
         except AuthConfigurationError as error:
             self.send_json({"error": str(error)}, status=503)

@@ -17,6 +17,27 @@ import { Notice, Panel } from "./ui";
 
 const roleLabel = (role: UserRole) =>
   role === "super_admin" ? "Super admin" : "Pengguna";
+const pageLabel: Record<string, string> = {
+  "/": "Ringkasan",
+  "/validasi": "Validasi model",
+  "/membership": "Fungsi keanggotaan",
+  "/gwo": "Proses GWO",
+  "/fis": "Proses FIS Mamdani",
+  "/simulasi": "Simulasi baru",
+  "/anggota": "Anggota kelompok",
+  "/motto": "Motto",
+  "/pengguna": "Kelola pengguna",
+};
+function loginDuration(start: string | null, now: number) {
+  if (!start) return "Belum tercatat";
+  const seconds = Math.max(0, Math.floor((now - Date.parse(start)) / 1000));
+  if (!Number.isFinite(seconds)) return "Belum tercatat";
+  const hours = Math.floor(seconds / 3600),
+    minutes = Math.floor((seconds % 3600) / 60);
+  return hours
+    ? `${hours} jam ${minutes} mnt`
+    : `${minutes} mnt ${seconds % 60} dtk`;
+}
 const timestamp = (value: string) =>
   new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
@@ -34,6 +55,8 @@ export default function UsersView() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [clock, setClock] = useState(() => Date.now());
+  const [serverOffset, setServerOffset] = useState(0);
   const [editing, setEditing] = useState<DashboardUser | null>(null);
   const [role, setRole] = useState<UserRole>("member");
   const [active, setActive] = useState(true);
@@ -46,6 +69,8 @@ export default function UsersView() {
   const isAdmin = info?.identity.role === "super_admin";
   const remember = useCallback(
     (response: UsersResponse) => {
+      if (response.server_time)
+        setServerOffset(Date.parse(response.server_time) - Date.now());
       saveDirectory(owner, response);
       setResult(response);
     },
@@ -66,6 +91,11 @@ export default function UsersView() {
       setLoading(false);
     }
   }, [refreshIdentity, remember]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -217,7 +247,8 @@ export default function UsersView() {
         admin juga dapat mengelola peran serta mengaktifkan atau menonaktifkan
         akses akun. Status login diperbarui otomatis; koneksi yang tidak
         terdeteksi selama 90 detik tampil sebagai Tidak login. Kick mengakhiri
-        sesi tanpa memblokir akun.
+        sesi tanpa memblokir akun. Durasi dihitung dari sesi aktif paling awal;
+        halaman menunjukkan aktivitas terakhir dan diperbarui berkala.
       </p>
       {error && <Notice error>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
@@ -378,6 +409,8 @@ export default function UsersView() {
                   <th scope="col">Pengguna</th>
                   <th scope="col">Peran</th>
                   <th scope="col">Status login</th>
+                  <th scope="col">Durasi login</th>
+                  <th scope="col">Halaman saat ini</th>
                   <th scope="col">Tindakan</th>
                 </tr>
               </thead>
@@ -405,6 +438,29 @@ export default function UsersView() {
                       >
                         {user.logged_in ? "Sedang login" : "Tidak login"}
                       </span>
+                    </td>
+                    <td className="admin-duration">
+                      {user.logged_in
+                        ? loginDuration(
+                            user.login_started_at,
+                            clock + serverOffset,
+                          )
+                        : "Tidak ada sesi"}
+                    </td>
+                    <td className="admin-current-page">
+                      {user.logged_in ? (
+                        <>
+                          <span>
+                            {pageLabel[user.current_page || ""] ||
+                              "Menunggu aktivitas halaman"}
+                          </span>
+                          {user.session_count > 1 && (
+                            <small>{user.session_count} sesi aktif</small>
+                          )}
+                        </>
+                      ) : (
+                        "Tidak ada sesi"
+                      )}
                     </td>
                     <td>
                       <div className="admin-row-actions">
