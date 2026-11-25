@@ -1,9 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isCurrentSession } from "./session-scope";
+import { PUBLIC_DASHBOARD } from "./access-mode";
 
 let clientPromise: Promise<SupabaseClient> | undefined;
 const sessionCleanup = new Set<() => void>();
 let redirectingToLogin = false;
+export function redirectAfterSignOut() {
+  if (!PUBLIC_DASHBOARD) return redirectToLogin();
+  if (redirectingToLogin) return;
+  redirectingToLogin = true;
+  window.location.replace("/");
+}
 export function redirectToLogin(status?: "expired" | "kicked") {
   if (redirectingToLogin) return;
   redirectingToLogin = true;

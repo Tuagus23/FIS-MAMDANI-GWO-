@@ -10,13 +10,20 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { api, getAuthClient, redirectToLogin } from "@/lib/auth";
+import {
+  api,
+  getAuthClient,
+  redirectToLogin,
+  redirectAfterSignOut,
+} from "@/lib/auth";
+import { ADMIN_LOGIN_URL, PUBLIC_DASHBOARD } from "@/lib/access-mode";
 import { errorMessage } from "@/lib/data";
 import {
   cachedDataset,
   forgetDataset,
   loadBootstrap,
   loadDataset,
+  PUBLIC_SCOPE,
   sessionScope,
 } from "@/lib/dashboard-cache";
 import type {
@@ -52,6 +59,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const identityRequest = useRef<Promise<void> | null>(null);
   const identityPage = useRef("");
   const pathname = usePathname();
+  const authenticated = info !== null && info.identity.role !== "guest";
   const refreshIdentity = useCallback(function refresh(): Promise<void> {
     if (identityRequest.current)
       return identityRequest.current.then(() => {
@@ -84,13 +92,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     return request;
   }, []);
   useEffect(() => {
+    if (!authenticated) return;
     const refresh = () => {
       void refreshIdentity();
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
-  }, [refreshIdentity]);
-  const authenticated = info !== null;
+  }, [authenticated, refreshIdentity]);
   useEffect(() => {
     if (authenticated) void refreshIdentity();
   }, [authenticated, pathname, refreshIdentity]);
@@ -114,32 +122,50 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     getAuthClient()
       .then(async (client) => {
         const { data } = await client.auth.getSession();
-        if (!data.session) {
+        if (!data.session && !PUBLIC_DASHBOARD) {
           redirectToLogin();
           return;
         }
         if (
           new URLSearchParams(location.hash.slice(1)).get("type") === "invite"
         ) {
-          window.location.replace(`/login${location.hash}`);
+          window.location.replace(`${ADMIN_LOGIN_URL}${location.hash}`);
           return;
         }
         const datasets = await loadBootstrap(data.session);
         if (!active) return;
         setInfo(datasets);
-        setScope(sessionScope(data.session));
+        setScope(data.session ? sessionScope(data.session) : PUBLIC_SCOPE);
         setResult({
           data: datasets.data,
           error: datasets.data_error || "",
           id: datasets.default,
         });
         const { data: listener } = client.auth.onAuthStateChange((event) => {
-          if (event === "SIGNED_OUT") redirectToLogin();
+          if (event === "SIGNED_OUT") redirectAfterSignOut();
         });
         unsubscribe = () => listener.subscription.unsubscribe();
       })
       .catch((error) => {
-        if (active) setAuthError(errorMessage(error));
+        if (!active) return;
+        if (!PUBLIC_DASHBOARD) {
+          setAuthError(errorMessage(error));
+          return;
+        }
+        loadBootstrap(null)
+          .then((datasets) => {
+            if (!active) return;
+            setInfo(datasets);
+            setScope(PUBLIC_SCOPE);
+            setResult({
+              data: datasets.data,
+              error: datasets.data_error || "",
+              id: datasets.default,
+            });
+          })
+          .catch((failure) => {
+            if (active) setAuthError(errorMessage(failure));
+          });
       });
     return () => {
       active = false;
@@ -174,8 +200,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   if (!info)
     return (
       <div className="auth-gate" role="status">
-        <span>{authError || "Memeriksa sesi dan izin akses…"}</span>
-        {authError && <Link href="/login">Masuk kembali</Link>}
+        <span>
+          {authError ||
+            (PUBLIC_DASHBOARD
+              ? "Membuka dashboard…"
+              : "Memeriksa sesi dan izin akses…")}
+        </span>
+        {authError && <Link href={ADMIN_LOGIN_URL}>Masuk admin</Link>}
       </div>
     );
   const current = result.id === datasetId;

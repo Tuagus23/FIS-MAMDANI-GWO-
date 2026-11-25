@@ -14,6 +14,7 @@ const bootstraps = new ResourceCache<BootstrapResponse>(15000);
 const datasets = new ResourceCache<DashboardData>();
 const directories = new ResourceCache<UsersResponse>(60000);
 const gwo = new ResourceCache<GwoData>();
+export const PUBLIC_SCOPE = "public";
 
 onSessionEnded(() => {
   bootstraps.clear();
@@ -32,12 +33,18 @@ function checkedDataset(value: DashboardData, id: string) {
   return value;
 }
 
-export async function loadBootstrap(session: Session) {
-  const scope = sessionScope(session);
+export async function loadBootstrap(session: Session | null) {
+  const scope = session ? sessionScope(session) : PUBLIC_SCOPE;
   const response = await bootstraps.load(scope, () =>
-    api<BootstrapResponse>("/api/bootstrap"),
+    session
+      ? api<BootstrapResponse>("/api/bootstrap")
+      : readResponse<BootstrapResponse>("/api/bootstrap"),
   );
-  if (response.identity.id !== session.user.id)
+  if (
+    session
+      ? response.identity.id !== session.user.id
+      : response.identity.role !== "guest"
+  )
     throw new Error("Identitas sesi tidak sesuai. Silakan masuk kembali.");
   if (response.data)
     datasets.seed(
@@ -54,9 +61,11 @@ export const forgetDataset = (scope: string, id: string) =>
 export function loadDataset(scope: string, id: string) {
   return datasets.load(`${scope}:${id}`, async () =>
     checkedDataset(
-      await api<DashboardData>(
-        `/api/dashboard?dataset=${encodeURIComponent(id)}`,
-      ),
+      await (
+        scope === PUBLIC_SCOPE
+          ? readResponse<DashboardData>
+          : api<DashboardData>
+      )(`/api/dashboard?dataset=${encodeURIComponent(id)}`),
       id,
     ),
   );

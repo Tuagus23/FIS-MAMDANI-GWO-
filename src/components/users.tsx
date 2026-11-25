@@ -9,6 +9,7 @@ import {
   type FormEvent,
 } from "react";
 import { api, HttpError } from "@/lib/auth";
+import { ADMIN_LOGIN_URL } from "@/lib/access-mode";
 import { cachedDirectory, saveDirectory } from "@/lib/dashboard-cache";
 import { errorMessage } from "@/lib/data";
 import type { DashboardUser, UserRole, UsersResponse } from "@/lib/types";
@@ -151,6 +152,11 @@ export default function UsersView() {
       <Notice>
         Halaman ini hanya tersedia untuk super admin. Anda tetap bisa
         menjalankan simulasi dan mengunduh hasil eksperimen.
+        {info?.identity.role === "guest" && (
+          <Link className="button button-primary" href={ADMIN_LOGIN_URL}>
+            Masuk admin
+          </Link>
+        )}
         <Link className="button button-secondary" href="/">
           Kembali ke ringkasan
         </Link>

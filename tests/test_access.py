@@ -128,10 +128,13 @@ class ApiTests(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
 
-    def request(self, path, payload=None):
+    def request(self, path, payload=None, authenticated=True):
+        headers = {"Content-Type": "application/json"}
+        if authenticated:
+            headers["Authorization"] = "Bearer " + "x" * 40
         request = Request(f"http://127.0.0.1:{self.server.server_port}{path}",
                           data=None if payload is None else json.dumps(payload).encode(),
-                          headers={"Authorization": "Bearer " + "x" * 40, "Content-Type": "application/json"})
+                          headers=headers)
         try:
             with urlopen(request) as response: return response.status, json.loads(response.read())
         except HTTPError as error:
@@ -151,6 +154,38 @@ class ApiTests(unittest.TestCase):
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _: MEMBER,
                         run_simulation=lambda payload: {"config": payload, "summary": []}):
             self.assertEqual(self.request("/api/simulate", {"nodes": 10})[0], 200)
+
+    def test_public_mode_allows_only_experiment_data_and_simulation_without_login(self):
+        snapshot = {"dataset": {"id": "results"}, "summary": [], "history": []}
+        with patch.dict(self.handler.do_GET.__globals__, public_dashboard_enabled=lambda: True,
+                        verify_authorization_header=lambda _: self.fail("Guest unexpectedly required Auth"),
+                        dashboard_data=lambda _: snapshot,
+                        run_simulation=lambda payload: {"config": payload, "summary": []}):
+            status, body = self.request("/api/bootstrap", authenticated=False)
+            self.assertEqual(status, 200)
+            self.assertEqual(body["identity"], {"id": "public", "name": "Pengunjung", "role": "guest"})
+            self.assertEqual(body["data"], snapshot)
+            self.assertEqual(self.request("/api/datasets", authenticated=False)[0], 200)
+            self.assertEqual(self.request("/api/dashboard?dataset=results", authenticated=False)[0], 200)
+            self.assertEqual(self.request("/api/simulate", {"nodes": 10}, authenticated=False)[0], 200)
+
+    def test_public_mode_never_opens_admin_routes_or_presence(self):
+        def denied(_): raise AuthDenied("Sesi tidak berlaku.")
+        with patch.dict(self.handler.do_GET.__globals__, public_dashboard_enabled=lambda: True,
+                        verify_authorization_header=denied):
+            for path, body in [("/api/admin-users", None), ("/api/admin-users", {"id": ADMIN_ID, "role": "super_admin"}),
+                               ("/api/admin-kick", {"id": MEMBER_ID}), ("/api/session", None), ("/api/session", {})]:
+                self.assertEqual(self.request(path, body, authenticated=False)[0], 401)
+            self.assertEqual(self.request("/api/bootstrap")[0], 401, "Bad credentials must not silently become a guest")
+
+    def test_disabling_public_mode_restores_login_requirement(self):
+        def denied(_): raise AuthDenied("Sesi tidak berlaku.")
+        with patch.dict(self.handler.do_GET.__globals__, public_dashboard_enabled=lambda: False,
+                        verify_authorization_header=denied,
+                        dashboard_data=lambda _: self.fail("Private data was read"),
+                        run_simulation=lambda _: self.fail("Private simulation was run")):
+            for path, body in [("/api/bootstrap", None), ("/api/datasets", None), ("/api/dashboard", None), ("/api/simulate", {"nodes": 10})]:
+                self.assertEqual(self.request(path, body, authenticated=False)[0], 401)
 
     def test_page_heartbeat_retains_authentication_and_validates_page(self):
         with patch.dict(self.handler.do_GET.__globals__, verify_authorization_header=lambda _, current_page: MEMBER if current_page == "/fis" else self.fail("Unexpected page")):

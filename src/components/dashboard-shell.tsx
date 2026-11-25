@@ -5,7 +5,8 @@ import { useEffect, useState, type ReactNode, type MouseEvent } from "react";
 import { BrandMark } from "./brand-mark";
 import { NavIcon } from "./nav-icon";
 import { useDashboard } from "./dashboard-provider";
-import { redirectToLogin, signOutDashboard } from "@/lib/auth";
+import { redirectAfterSignOut, signOutDashboard } from "@/lib/auth";
+import { ADMIN_LOGIN_URL } from "@/lib/access-mode";
 import { milestone, views, viewPath } from "@/lib/data";
 import { downloadCsv } from "@/lib/download";
 import { Notice } from "./ui";
@@ -38,6 +39,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       ? [...groups, { label: "Administrasi", items: ["pengguna"] as View[] }]
       : groups;
   const name = info?.identity.name || "Akun";
+  const guest = info?.identity.role === "guest";
   const words = name.split(/\s+/).filter(Boolean);
   const initials = `${words[0]?.[0] || ""}${words.length > 1 ? words[words.length - 1][0] : ""}`;
   const status = loading
@@ -169,53 +171,64 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                   />
                   <span className="connection-label">{status}</span>
                 </span>
-                <div className="account-identity" title={name}>
-                  <span className="account-initials" aria-hidden="true">
-                    {initials}
-                  </span>
-                  <div>
-                    <span
-                      className="account-email"
-                      aria-label={`Akun aktif: ${name}`}
-                    >
-                      {name}
+                {!guest && (
+                  <div className="account-identity" title={name}>
+                    <span className="account-initials" aria-hidden="true">
+                      {initials}
                     </span>
-                    <span className="account-role">
-                      {info?.identity.role === "super_admin"
-                        ? "Super admin"
-                        : "Pengguna"}
-                    </span>
+                    <div>
+                      <span
+                        className="account-email"
+                        aria-label={`Akun aktif: ${name}`}
+                      >
+                        {name}
+                      </span>
+                      <span className="account-role">
+                        {info?.identity.role === "super_admin"
+                          ? "Super admin"
+                          : "Pengguna"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <button
-                  className="button button-quiet logout-button"
-                  disabled={leaving}
-                  aria-label="Keluar dari akun"
-                  onClick={async () => {
-                    setLeaving(true);
-                    setLogoutError("");
-                    try {
-                      await signOutDashboard();
-                      redirectToLogin();
-                    } catch {
-                      setLeaving(false);
-                      setLogoutError(
-                        "Belum dapat keluar. Periksa koneksi lalu coba lagi.",
-                      );
-                    }
-                  }}
-                >
-                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <path
-                      d="M8 3H4v14h4m4-11 4 4-4 4m-5-4h9"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <span>{leaving ? "Keluar…" : "Keluar"}</span>
-                </button>
+                )}
+                {guest ? (
+                  <Link
+                    className="button button-secondary"
+                    href={ADMIN_LOGIN_URL}
+                  >
+                    Masuk admin
+                  </Link>
+                ) : (
+                  <button
+                    className="button button-quiet logout-button"
+                    disabled={leaving}
+                    aria-label="Keluar dari akun"
+                    onClick={async () => {
+                      setLeaving(true);
+                      setLogoutError("");
+                      try {
+                        await signOutDashboard();
+                        redirectAfterSignOut();
+                      } catch {
+                        setLeaving(false);
+                        setLogoutError(
+                          "Belum dapat keluar. Periksa koneksi lalu coba lagi.",
+                        );
+                      }
+                    }}
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <path
+                        d="M8 3H4v14h4m4-11 4 4-4 4m-5-4h9"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <span>{leaving ? "Keluar…" : "Keluar"}</span>
+                  </button>
+                )}
               </div>
             </div>
             <nav className="mobile-nav" aria-label="Navigasi halaman">

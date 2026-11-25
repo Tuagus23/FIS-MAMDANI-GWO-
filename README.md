@@ -29,6 +29,15 @@ Setiap menu memiliki URL sendiri: `/`, `/validasi`, `/membership`, `/gwo`, `/fis
 `/anggota`, `/motto`, dan `/simulasi`. Tautan hash lama serta `/login.html`
 tetap kompatibel.
 
+Akses publik sementara diatur pada `dashboard-access.json` melalui
+`"public_dashboard": true`. Pengunjung dapat membuka analisis, menjalankan
+simulasi dengan batas yang sama, dan mengunduh hasil tanpa akun. `/login`
+(termasuk tujuan QR lama) mengarah langsung ke dashboard. Tombol **Masuk admin**
+membuka `/login?admin=1`; akun, peran, dan aktivitas sesi tetap terlindungi.
+Pengunjung anonim tidak dibuatkan akun atau baris sesi. Untuk mewajibkan login
+lagi, ubah nilai tersebut menjadi `false` lalu deploy ulang frontend dan API
+bersama. Konfigurasi hilang/tidak valid pada API diperlakukan sebagai mode privat.
+
 Perhitungan simulasi dan autentikasi tetap dilayani API Python yang sama.
 Semua pemeriksaan izin berada di server. Publishable key dikirim lewat
 `/api/auth-config`; secret key dan daftar akun tetap di environment server.
@@ -47,8 +56,9 @@ Di terminal kedua:
 npm run dev
 ```
 
-Buka **http://localhost:3000**. API lokal membutuhkan variabel Supabase dan
-roster yang sama dengan konfigurasi server. Untuk menggunakan API produksi
+Buka **http://localhost:3000**. Login dan administrasi lokal membutuhkan variabel Supabase dan
+roster yang sama dengan konfigurasi server. Mode publik dapat melayani data eksperimen
+tanpa konfigurasi Auth. Untuk menggunakan API produksi
 saat mengembangkan UI lokal, jalankan Next dengan `DASHBOARD_API_ORIGIN`
 berisi origin backend yang Anda kelola; variabel ini hanya dipakai dalam mode development.
 
@@ -75,7 +85,8 @@ dataset, dan eksperimen utama sekaligus. Konfigurasi URL dan publishable key
 Supabase disertakan sebagai JSON publik di HTML produksi; konfigurasi lokal
 tetap dapat memakai `/api/auth-config`. Tidak ada secret key dalam HTML.
 
-Data eksperimen disimpan di memori browser per sesi login. Kembali ke dataset
+Data eksperimen disimpan di memori browser per sesi login, atau di ruang cache
+publik tersendiri untuk pengunjung anonim. Kembali ke dataset
 yang sudah dibuka tidak mengambil ulang CSV melalui API. Cache dibersihkan saat
 keluar dan dipisahkan berdasarkan identitas sesi; permintaan yang datang
 bersamaan berbagi satu fetch. Riwayat GWO tersimpan juga dipakai kembali.
@@ -87,7 +98,7 @@ API terlindungi tetap memakai `no-store`; cache browser ini tidak mengubah
 otorisasi server atau membuat data akun tersedia melalui CDN bersama.
 Uji cache: `npm run test:cache` (Node.js 24 atau lebih baru).
 
-Dashboard memakai Supabase Auth. Form login menerima NIM atau nama terakhir
+Login admin dan mode privat memakai Supabase Auth. Form login menerima NIM atau nama terakhir
 yang terdaftar pada roster, lalu langsung membuka dashboard tanpa audio sukses. Tidak
 ada pendaftaran publik. Atur variabel berikut pada **Vercel → Project →
 Settings → Environment Variables**:

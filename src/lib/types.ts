@@ -76,7 +76,7 @@ export interface DashboardData {
 }
 export interface DatasetsResponse {
   default: string;
-  identity: { id: string; name: string; role: UserRole };
+  identity: { id: string; name: string; role: UserRole | "guest" };
   datasets: Dataset[];
 }
 export type UserRole = "member" | "super_admin";

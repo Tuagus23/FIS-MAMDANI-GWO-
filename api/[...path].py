@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import traceback
+from pathlib import Path
+from functools import lru_cache
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
@@ -20,6 +22,15 @@ from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
 from access import DASHBOARD_PAGES, AccessConflict, end_session, kick_member, list_users, update_user
 
 
+@lru_cache(maxsize=1)
+def public_dashboard_enabled() -> bool:
+    try:
+        settings = json.loads((Path(__file__).resolve().parents[1] / "dashboard-access.json").read_text())
+        return settings.get("public_dashboard") is True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         request = urlparse(self.path)
@@ -36,7 +47,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if request.path in {"/api/datasets", "/api/bootstrap"}:
-            if not self.require_authentication():
+            if not self.require_dashboard_access():
                 return
             response = {
                 "default": "results",
@@ -73,7 +84,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if request.path == "/api/dashboard":
-            if not self.require_authentication():
+            if not self.require_dashboard_access():
                 return
             dataset_id = parse_qs(request.query).get("dataset", ["results"])[0]
             if dataset_id not in DATASETS:
@@ -118,7 +129,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_json({"error": "Alamat API tidak dikenal."}, status=404)
             return
 
-        if not self.require_authentication():
+        if not self.require_dashboard_access():
             return
 
         try:
@@ -188,6 +199,12 @@ class handler(BaseHTTPRequestHandler):
                 {"error": "Layanan login tidak dapat dihubungi. Coba lagi sebentar."},
                 status=503,
             )
+
+    def require_dashboard_access(self) -> bool:
+        if public_dashboard_enabled() and not self.headers.get("Authorization"):
+            self.auth_identity = {"id": "public", "name": "Pengunjung", "role": "guest"}
+            return True
+        return self.require_authentication()
 
     def require_authentication(self, current_page: str | None = None) -> bool:
         try:

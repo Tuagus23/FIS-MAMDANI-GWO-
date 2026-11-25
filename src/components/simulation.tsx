@@ -5,7 +5,7 @@ import type {
   SimulationConfig,
   SimulationResult,
 } from "@/lib/types";
-import { api } from "@/lib/auth";
+import { api, readResponse } from "@/lib/auth";
 import {
   bestRows,
   errorMessage,
@@ -18,7 +18,7 @@ import { HistoryChart, SummaryTable } from "./results";
 import { Notice, Panel } from "./ui";
 import { useDashboard } from "./dashboard-provider";
 export function SimulationView({ data }: { data: DashboardData }) {
-  const { simulation: result, saveSimulation } = useDashboard();
+  const { simulation: result, saveSimulation, info } = useDashboard();
   const [config, setConfig] = useState<SimulationConfig>(
     result?.config ?? {
       nodes: 30,
@@ -78,7 +78,11 @@ export function SimulationView({ data }: { data: DashboardData }) {
           setBusy(true);
           setError("");
           try {
-            const value = await api<SimulationResult>("/api/simulate", {
+            const value = await (
+              info?.identity.role === "guest"
+                ? readResponse<SimulationResult>
+                : api<SimulationResult>
+            )("/api/simulate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(config),
