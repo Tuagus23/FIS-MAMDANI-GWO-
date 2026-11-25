@@ -6,6 +6,31 @@
   font-display: swap;
 }
 
+:root {
+  --text-small: 13px;
+  --text-body: 14px;
+  --content-gap: 24px;
+  --panel-padding: 24px;
+}
+.content-stack {
+  display: grid;
+  min-width: 0;
+  gap: var(--content-gap);
+  align-content: start;
+}
+.dashboard-content {
+  container-type: inline-size;
+}
+.dashboard-content :where(h1, h2, h3, h4) {
+  text-wrap: balance;
+}
+.dashboard-content :where(p, dd) {
+  overflow-wrap: break-word;
+}
+.dashboard-content :where(button, select, input, summary) {
+  scroll-margin-block: 160px 24px;
+}
+
 .admin-access-note {
   max-width: 78ch;
   color: #4c655b;
@@ -285,7 +310,7 @@ summary {
   display: block;
   margin-top: 4px;
   color: #adc7bc;
-  font-size: 12px;
+  font-size: var(--text-small);
   line-height: 1.5;
 }
 .sidebar-brand .brand-mark {
@@ -296,7 +321,7 @@ summary {
 }
 .sidebar-navigation {
   display: grid;
-  gap: 26px;
+  gap: 24px;
 }
 .nav-group {
   display: grid;
@@ -305,7 +330,7 @@ summary {
 .sidebar-label {
   margin: 0 13px 6px;
   color: #adc7bc;
-  font-size: 12px;
+  font-size: var(--text-small);
   font-weight: 650;
   line-height: 1.5;
 }
@@ -319,7 +344,7 @@ summary {
   border-radius: 9px;
   padding: 10px 12px;
   color: #cbddd3;
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 550;
   line-height: 1.5;
   transition:
@@ -357,7 +382,7 @@ summary {
 .sidebar-note p:last-child {
   margin-top: 3px;
   color: #adc7bc;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 .sidebar-note-mark {
   display: block;
@@ -375,11 +400,14 @@ summary {
 }
 .topbar-row {
   display: flex;
-  min-height: 76px;
+  min-height: 72px;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 12px 36px;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
 }
 .breadcrumb {
   display: flex;
@@ -387,7 +415,7 @@ summary {
   align-items: center;
   gap: 10px;
   color: #49614f;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 .breadcrumb > span:last-child {
   color: #193832;
@@ -442,14 +470,14 @@ summary {
   display: block;
   margin-top: 2px;
   color: #49614f;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 .connection-state {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   color: #355e4b;
-  font-size: 12px;
+  font-size: var(--text-small);
   white-space: nowrap;
 }
 .connection-dot {
@@ -483,42 +511,46 @@ summary {
 }
 .dashboard-content {
   width: 100%;
-  max-width: 1536px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 38px 36px 24px;
+  padding: 32px 36px 24px;
 }
 .page-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 26px;
+  margin-bottom: 24px;
+}
+.page-heading > div {
+  min-width: 0;
 }
 .page-heading h1 {
   color: #193832;
-  font-size: clamp(26px, 2.4vw, 34px);
+  font-size: clamp(26px, 2.4vw, 32px);
   font-weight: 750;
-  letter-spacing: -0.035em;
-  line-height: 1.2;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
 }
 .page-description {
-  max-width: 68ch;
-  margin-top: 10px;
+  max-width: 72ch;
+  margin-top: 8px;
   color: #5b7062;
   font-size: 14px;
   line-height: 1.7;
 }
 .export-button {
   flex: 0 0 auto;
+  margin-top: 2px;
   font-size: 13px;
   font-weight: 700;
 }
 .dataset-toolbar {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   margin-bottom: 24px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
@@ -530,7 +562,7 @@ summary {
 }
 .dataset-picker label {
   color: #506658;
-  font-size: 12px;
+  font-size: var(--text-small);
   font-weight: 650;
 }
 .dataset-select {
@@ -541,47 +573,54 @@ summary {
   padding: 10px 34px 10px 12px;
   background-color: #fff;
   color: #193832;
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 600;
   line-height: 1.4;
 }
 .dataset-description {
   max-width: 65ch;
   color: #5b7062;
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.7;
 }
 .dataset-toolbar .dataset-description {
   border-left: 1px solid var(--line);
-  padding-left: 28px;
+  padding-left: 24px;
 }
 .panel {
   min-width: 0;
-  padding: 24px;
+  padding: var(--panel-padding);
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
   box-shadow: none;
 }
 .panel-heading {
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 16px;
 }
 .panel-title {
   margin-top: 0;
   color: #1e3c2c;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 750;
   letter-spacing: -0.02em;
-  line-height: 1.5;
+  line-height: 1.4;
+}
+.panel-heading > :first-child {
+  flex: 1 1 200px;
 }
 .panel-caption {
   color: #5b7062;
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.75;
 }
 .panel-unit {
-  font-size: 12px;
+  flex-shrink: 1;
+  max-width: 100%;
+  font-size: var(--text-small);
+  line-height: 1.65;
 }
 .summary-stats {
   display: grid;
@@ -594,7 +633,7 @@ summary {
 }
 .metric-card {
   min-width: 0;
-  padding: 22px 24px;
+  padding: 20px 24px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -627,15 +666,14 @@ summary {
 .summary-charts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: var(--content-gap);
 }
 .summary-charts .panel {
   display: flex;
   flex-direction: column;
 }
 .summary-charts .chart-frame {
-  margin-top: auto;
-  padding-top: 18px;
+  margin-top: 20px;
 }
 .summary-charts .chart-data-details {
   margin-top: 14px;
@@ -652,12 +690,19 @@ summary {
   color: #506658;
   font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
+  vertical-align: bottom;
+  white-space: normal;
+  line-height: 1.5;
 }
 .data-table td {
   padding: 16px 14px;
   font-size: 14px;
   line-height: 1.6;
+  vertical-align: top;
+}
+.data-table td[data-wrap] {
+  min-width: 140px;
+  white-space: normal;
 }
 .data-table tbody tr {
   transition: background-color 150ms ease;
@@ -679,13 +724,13 @@ summary {
 }
 .protocol-name {
   gap: 9px;
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 750;
 }
 .table-footnote,
 .form-footnote {
   color: #5b7062;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.7;
 }
 .chart-data-details summary {
@@ -740,7 +785,7 @@ summary {
 }
 .chart-data-details .table-wrap {
   margin-top: 0;
-  padding-inline: 12px;
+  padding-inline: 16px;
   scrollbar-gutter: stable;
   border: 1px solid var(--line);
 }
@@ -783,10 +828,111 @@ summary {
   line-height: 1.6;
 }
 .membership-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--content-gap);
   align-items: start;
 }
 .membership-card {
   align-self: start;
+  padding: var(--panel-padding);
+}
+.membership-card h2 {
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+.membership-series-heading {
+  flex-wrap: wrap;
+}
+.simulation-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--content-gap);
+  align-items: start;
+}
+.simulation-form .form-grid {
+  gap: 20px;
+}
+.simulation-form .field-label {
+  display: flex;
+  flex-direction: column;
+}
+.simulation-form .field-help {
+  margin-bottom: auto;
+}
+.simulation-result {
+  margin-top: 20px;
+}
+.simulation-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.simulation-stats .sim-metric {
+  padding: 16px;
+}
+.simulation-stats .sim-metric strong {
+  margin-top: 8px;
+  line-height: 1.6;
+}
+@container (min-width: 980px) {
+  .simulation-layout {
+    grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.4fr);
+  }
+}
+@container (min-width: 521px) and (max-width: 1049px) {
+  .team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .member-photo-wrap {
+    aspect-ratio: 4 / 3;
+  }
+  .member-photo {
+    object-position: center 30%;
+  }
+}
+@container (max-width: 520px) {
+  .motto-word-pair {
+    gap: 0.12em;
+    flex-wrap: nowrap;
+    font-size: clamp(32px, 11cqi, 52px);
+  }
+  .motto-learning {
+    font-size: clamp(36px, 11cqi, 52px);
+    line-height: 1.08;
+  }
+  .team-intro {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .team-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-card {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+  .member-photo-wrap {
+    min-height: 100%;
+    aspect-ratio: auto;
+  }
+  .member-card-body {
+    padding: 16px;
+  }
+  .member-card-body h3,
+  .member-role-row {
+    min-height: 0;
+  }
+  .simulation-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container (min-width: 1280px) {
+  .membership-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .validation-wins-key {
   display: flex;
@@ -1120,6 +1266,29 @@ html:not([data-input-mode="keyboard"]) .motto-learning > span {
     padding-left: 20px;
   }
 }
+@container (max-width: 760px) {
+  .seed-analysis-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .process-flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .process-flow li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .process-flow li::before {
+    grid-row: span 3;
+    margin-bottom: 0;
+  }
+  .process-flow li > span,
+  .process-flow li > strong,
+  .process-flow li > p {
+    grid-column: 2;
+  }
+}
 @media (max-width: 700px) {
   .glossary-details {
     padding: 12px 16px;
@@ -1183,7 +1352,7 @@ html:not([data-input-mode="keyboard"]) .motto-learning > span {
   display: block;
   margin-top: 4px;
   color: #5b7062;
-  font-size: 12px;
+  font-size: var(--text-small);
 }
 .admin-user-table .data-table th:not(:first-child),
 .admin-user-table .data-table td:not(:first-child) {
@@ -1192,7 +1361,7 @@ html:not([data-input-mode="keyboard"]) .motto-learning > span {
 .button {
   min-height: 44px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 650;
   transition:
     background-color 150ms ease,
@@ -1208,7 +1377,7 @@ html:not([data-input-mode="keyboard"]) .motto-learning > span {
   border-radius: 8px;
 }
 .field-label {
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 650;
 }
 .field-help {
@@ -1223,7 +1392,7 @@ html:not([data-input-mode="keyboard"]) .motto-learning > span {
   padding-top: 22px;
   border-top: 1px solid var(--line);
   color: #607467;
-  font-size: 12px;
+  font-size: var(--text-small);
   line-height: 1.7;
 }
 .page-footer p:first-child {
@@ -1329,12 +1498,12 @@ html:not([data-input-mode="keyboard"]) .view-section {
     border-color: #476e59;
   }
 }
-@media (min-width: 1140px) {
+@container (min-width: 980px) {
   .summary-charts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .summary-charts .panel-caption {
-    min-height: 64px;
+    min-height: 74px;
   }
 }
 @media (max-width: 1199px) {
@@ -1398,7 +1567,7 @@ html:not([data-input-mode="keyboard"]) .view-section {
     border-radius: 7px;
     padding: 8px 12px;
     color: #536c5b;
-    font-size: 13px;
+    font-size: var(--text-body);
     font-weight: 550;
     transition:
       background-color 150ms ease,
@@ -1412,14 +1581,12 @@ html:not([data-input-mode="keyboard"]) .view-section {
   .mobile-nav-link:hover {
     background: #eff4f0;
   }
-  .summary-charts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .summary-charts .panel-caption {
-    min-height: 64px;
-  }
 }
 @media (max-width: 700px) {
+  :root {
+    --content-gap: 20px;
+    --panel-padding: 20px;
+  }
   .topbar-row {
     min-height: 66px;
     gap: 12px;
@@ -1452,7 +1619,7 @@ html:not([data-input-mode="keyboard"]) .view-section {
     padding: 0 16px 10px;
   }
   .dashboard-content {
-    padding: 28px 20px 22px;
+    padding: 24px 16px;
   }
   .page-heading {
     display: grid;
@@ -1481,6 +1648,11 @@ html:not([data-input-mode="keyboard"]) .view-section {
     gap: 7px;
     padding: 9px 11px;
     font-size: 13px;
+  }
+  .field-input,
+  .dataset-select,
+  .login-input {
+    font-size: 16px;
   }
   .dataset-toolbar {
     display: grid;
@@ -1530,7 +1702,7 @@ html:not([data-input-mode="keyboard"]) .view-section {
     flex-wrap: wrap;
   }
   .panel-title {
-    font-size: 16px;
+    font-size: 18px;
   }
   .chart-frame-tall {
     height: 280px;

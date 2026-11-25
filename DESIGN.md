@@ -30,6 +30,15 @@ Purpose: state indication and continuity while moving through data. ENERGY 2 / R
 - The motto has the one authored typographic moment: a single 250ms word entrance with 60–80ms staggering, followed by static readable text. Purpose: delight on this occasional group page. Keyboard navigation is immediate and reduced motion keeps opacity only. The supplied image and network diagram remain in place.
 - The small curved arrow beside the motto image labels the existing user-requested Easter egg; it does not create a new action.
 
+## Layout consistency
+
+- Shared page stacks use 24px spacing (20px on phones), with one heading scale and 14px body/control text; supporting information stays at least 13px.
+- Content width is capped at 1440px. Container queries respond to the actual reading area beside the sidebar, so MF comparisons, seed tables, team profiles, and simulation results receive useful widths rather than following viewport width alone.
+- MF comparisons keep before and after side by side when space permits, with larger plotting areas; disclosures expand each variable independently.
+- Table headers may wrap, while numerical cells keep tabular figures and right alignment. Text columns explicitly align left and long descriptions wrap inside their own column.
+- Team portraits share a crop and body spacing; compact layouts place the photo beside readable identity and responsibility text. The group heading replaces the duplicate introductory heading.
+- Simulation parameters align their fields and helpers; results receive the larger column and stack cleanly on narrow screens. Charts and original data retain their existing meaning.
+
 ## Boundaries
 
 Do not change experiment data, algorithm math, access rules, CSV meaning, or supplied group identity as part of visual polish. Use the existing photos and diagrams; add no invented claims or statistics.

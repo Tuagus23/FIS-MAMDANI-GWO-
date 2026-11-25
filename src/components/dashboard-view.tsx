@@ -23,7 +23,7 @@ export function DashboardView({ view }: { view: View }) {
     <section
       key={view}
       id={`view-${view}`}
-      className={`view-section space-y-5 ${["fis", "gwo"].includes(view) ? "process-page" : ""}`}
+      className={`view-section content-stack ${["fis", "gwo"].includes(view) ? "process-page" : ""}`}
       aria-labelledby="pageTitle"
     >
       {view === "pengguna" ? (
@@ -33,7 +33,7 @@ export function DashboardView({ view }: { view: View }) {
       ) : view === "motto" ? (
         <Motto />
       ) : data ? (
-        <div key={datasetId} className="space-y-5">
+        <div key={datasetId} className="content-stack">
           {view === "hasil" ? (
             <Results data={data} />
           ) : view === "validasi" ? (

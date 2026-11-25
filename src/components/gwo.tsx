@@ -258,6 +258,7 @@ export function GwoView({ data }: { data: DashboardData }) {
           columns={[
             {
               label: "Peran",
+              wrap: true,
               render: (r) =>
                 `${({ alpha: "Alpha · terbaik", beta: "Beta · kedua", delta: "Delta · ketiga" } as Record<string, string>)[r.role] || `Kandidat rank ${r.rank}`} · Wolf ${r.wolf}`,
             },
@@ -373,7 +374,16 @@ export function GwoView({ data }: { data: DashboardData }) {
               "mean_residual",
               "pdr_pct",
             ].map((key) => ({
-              label: key === "score" ? "Fitness" : key.toUpperCase(),
+              label:
+                key === "score"
+                  ? "Fitness"
+                  : key === "peak_residual"
+                    ? "Peak residual"
+                    : key === "mean_residual"
+                      ? "Mean residual"
+                      : key === "pdr_pct"
+                        ? "PDR (%)"
+                        : key.toUpperCase(),
               render: (r: { values: Record<string, number> }) =>
                 decimal(r.values[key]),
             })),
@@ -401,10 +411,10 @@ export function GwoView({ data }: { data: DashboardData }) {
         <DataTable
           rows={membershipRows(data.membership)}
           columns={[
-            { label: "Variabel", render: (r) => r.variable },
-            { label: "Himpunan", render: (r) => r.label },
-            { label: "Bentuk", render: (r) => r.shape },
-            { label: "Titik kurva", render: (r) => r.points },
+            { label: "Variabel", render: (r) => r.variable, wrap: true },
+            { label: "Himpunan", render: (r) => r.label, align: "start" },
+            { label: "Bentuk", render: (r) => r.shape, align: "start" },
+            { label: "Titik kurva", render: (r) => r.points, align: "start" },
           ]}
         />
       </Panel>

@@ -68,9 +68,9 @@ export function SimulationView({ data }: { data: DashboardData }) {
   const lifetime = bestRows(result?.summary || [], "lnd"),
     pdr = bestRows(result?.summary || [], "pdr_total_pct");
   return (
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+    <div className="simulation-layout">
       <form
-        className="panel space-y-5"
+        className="panel content-stack simulation-form"
         onSubmit={async (e) => {
           e.preventDefault();
           const id = ++request.current;
@@ -190,8 +190,8 @@ export function SimulationView({ data }: { data: DashboardData }) {
             <p>Hasil skenario akan muncul di sini setelah simulasi selesai.</p>
           </div>
         ) : (
-          <div className="space-y-5">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="content-stack simulation-result">
+            <div className="simulation-stats">
               {[
                 [
                   "Umur terpanjang",

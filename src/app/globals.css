@@ -200,7 +200,7 @@ a:focus-visible {
 }
 .data-table {
   width: 100%;
-  min-width: 500px;
+  min-width: 0;
   border-collapse: collapse;
   color: #40534e;
   font-size: 14px;
@@ -327,7 +327,7 @@ a:focus-visible {
   min-width: 0;
   border: 1px solid #dce5df;
   border-radius: 9px;
-  padding: 12px;
+  padding: 16px;
   background: #fff;
 }
 .membership-series-panel.is-initial {
@@ -360,7 +360,7 @@ a:focus-visible {
 }
 .membership-chart {
   position: relative;
-  height: 220px;
+  height: 260px;
   margin-top: 10px;
 }
 .membership-series-panel.is-unoptimized {
@@ -369,7 +369,7 @@ a:focus-visible {
 }
 .membership-static-note {
   display: flex;
-  min-height: 220px;
+  min-height: 260px;
   align-items: center;
   margin: 10px 0 0 !important;
   border: 1px dashed #9aaca1;
@@ -558,7 +558,7 @@ body {
   color: var(--ink);
   font-family: "Manrope", "Segoe UI", sans-serif;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -797,26 +797,17 @@ abbr[title] {
 /* Project team */
 .team-intro {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
 }
-.team-eyebrow {
-  color: #397468;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 .team-intro .panel-title {
-  margin-top: 7px;
-  font-size: 21px;
-  letter-spacing: -0.025em;
+  margin-top: 0;
 }
 .team-count {
   flex: 0 0 auto;
   border: 1px solid #dce8e0;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 8px 13px;
   background: #f4f8f5;
   color: #355d53;
@@ -826,7 +817,7 @@ abbr[title] {
 .team-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
 }
 .member-card {
   min-width: 0;
@@ -834,14 +825,10 @@ abbr[title] {
   border: 1px solid #e0e8e2;
   border-radius: 13px;
   background: #fff;
-  box-shadow: 0 3px 12px rgba(20, 45, 38, 0.035);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 150ms ease;
 }
 .member-card:hover {
   border-color: #c5d8cc;
-  box-shadow: 0 12px 28px rgba(20, 45, 38, 0.09);
 }
 .member-card.is-lead {
   border-color: #c6d9cf;
@@ -876,7 +863,7 @@ abbr[title] {
   backdrop-filter: blur(8px);
 }
 .member-card-body {
-  padding: 17px 17px 18px;
+  padding: 20px;
 }
 .member-nim {
   color: #60736b;
@@ -886,19 +873,21 @@ abbr[title] {
   letter-spacing: 0.025em;
 }
 .member-card-body h3 {
-  min-height: 48px;
-  margin-top: 7px;
+  min-height: 2.8em;
+  margin-top: 8px;
   color: #193832;
   font-size: 17px;
-  font-weight: 650;
+  font-weight: 750;
   letter-spacing: -0.02em;
   line-height: 1.4;
 }
 .member-role-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
+  min-height: 60px;
+  align-content: flex-start;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 12px;
 }
 .member-role {
@@ -906,11 +895,11 @@ abbr[title] {
   width: fit-content;
   margin-top: 12px;
   border: 1px solid #d5e5db;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 6px 9px;
   background: #f0f6f2;
   color: #285d50;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1.35;
 }
@@ -919,11 +908,11 @@ abbr[title] {
 }
 .member-lead-badge {
   border: 1px solid #f0d8a6;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 6px 9px;
   background: #fff8e9;
   color: #775516;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1.35;
 }
@@ -931,7 +920,7 @@ abbr[title] {
   margin-top: 12px;
   color: #53665f;
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.7;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -951,15 +940,9 @@ abbr[title] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
-  .member-card-body {
-    padding: 14px;
-  }
   .member-card-body h3 {
     min-height: 0;
-    font-size: 15px;
-  }
-  .member-contribution {
-    font-size: 13px;
+    font-size: 17px;
   }
 }
 @media (max-width: 1023px) {
@@ -1358,7 +1341,7 @@ abbr[title] {
   }
   .member-card {
     display: grid;
-    grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: 104px minmax(0, 1fr);
   }
   .member-photo-wrap {
     min-height: 100%;
@@ -1366,6 +1349,9 @@ abbr[title] {
   }
   .member-card-body {
     padding: 16px 15px;
+  }
+  .member-role-row {
+    min-height: 0;
   }
   .login-form-side {
     min-height: 430px;
@@ -1484,8 +1470,8 @@ abbr[title] {
 }
 .process-explainer h2 {
   color: #193832;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 18px;
+  font-weight: 750;
 }
 .process-explainer p {
   margin-top: 11px;
@@ -1511,7 +1497,7 @@ abbr[title] {
 }
 .gwo-equations code {
   color: #193832;
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -1552,8 +1538,8 @@ abbr[title] {
   display: block;
   margin-top: 5px;
   color: #193832;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 15px;
+  line-height: 1.5;
 }
 .process-flow li > p {
   margin-top: 6px;
@@ -1596,10 +1582,10 @@ abbr[title] {
   font-variant-numeric: tabular-nums;
 }
 .fis-result h3 {
-  margin-top: 18px;
+  margin-top: 0;
   color: #193832;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 15px;
+  font-weight: 750;
 }
 .fis-result .table-wrap {
   margin-top: 6px;
@@ -1629,8 +1615,8 @@ abbr[title] {
 }
 .gwo-coordinate-group h3 {
   color: #193832;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 15px;
+  font-weight: 750;
 }
 .gwo-coordinate-items {
   display: grid;
@@ -1692,8 +1678,8 @@ abbr[title] {
 .fis-visual h3 {
   margin-top: 0;
   color: #193832;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 15px;
+  font-weight: 750;
 }
 .fis-visual > p {
   margin-top: 5px;
@@ -1795,7 +1781,7 @@ abbr[title] {
   font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
   font-size: clamp(48px, 6.2vw, 78px);
   font-weight: 700;
-  line-height: 0.98;
+  line-height: 1.05;
   letter-spacing: -0.018em;
 }
 .motto-learning span:last-child {

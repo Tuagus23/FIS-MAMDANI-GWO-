@@ -1,11 +1,9 @@
 export default function Team() {
   return (
-    <div className="space-y-5">
-      {" "}
+    <div className="content-stack">
       <div className="team-intro panel">
         <div>
-          <p className="team-eyebrow">Kelompok 3 · Pengantar Komputasi Lunak</p>
-          <h2 className="panel-title">Empat peran, satu proyek</h2>
+          <h2 className="panel-title">Kelompok 3 · Pengantar Komputasi Lunak</h2>
           <p className="panel-caption">
             Tim yang mengembangkan dashboard, sistem FIS Mamdani, dan optimasi
             GWO untuk analisis jaringan sensor nirkabel.
@@ -29,7 +27,9 @@ export default function Team() {
           <div className="member-card-body">
             <p className="member-nim">NIM 2308561040</p>
             <h3>I Putu Agus Putra Darmawan</h3>
-            <span className="member-role">Pengembang web · logika GWO</span>
+            <div className="member-role-row">
+              <span className="member-role">Pengembang web · logika GWO</span>
+            </div>
             <p className="member-contribution">
               Mengembangkan antarmuka dashboard dan logika optimasi Grey Wolf
               Optimizer.
@@ -51,7 +51,9 @@ export default function Team() {
           <div className="member-card-body">
             <p className="member-nim">NIM 2308561134</p>
             <h3>Dewa Putu Adrian Paramarta</h3>
-            <span className="member-role">Sistem FIS Mamdani</span>
+            <div className="member-role-row">
+              <span className="member-role">Sistem FIS Mamdani</span>
+            </div>
             <p className="member-contribution">
               Mengembangkan sistem inferensi fuzzy Mamdani untuk pemilihan
               cluster head.
@@ -98,7 +100,9 @@ export default function Team() {
           <div className="member-card-body">
             <p className="member-nim">NIM 2308561124</p>
             <h3>A.A. Jaya Kesuma Wardana</h3>
-            <span className="member-role">Sistem FIS Mamdani</span>
+            <div className="member-role-row">
+              <span className="member-role">Sistem FIS Mamdani</span>
+            </div>
             <p className="member-contribution">
               Mengembangkan dan mengintegrasikan aturan pada sistem FIS Mamdani.
             </p>

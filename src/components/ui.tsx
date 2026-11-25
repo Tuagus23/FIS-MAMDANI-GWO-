@@ -6,6 +6,7 @@ export interface Column<T> {
   label: ReactNode;
   render: (row: T) => ReactNode;
   align?: "start" | "end";
+  wrap?: boolean;
 }
 export function DataTable<T>({
   rows,
@@ -30,7 +31,11 @@ export function DataTable<T>({
         <thead>
           <tr>
             {columns.map((column, i) => (
-              <th key={i} scope="col" data-align={column.align}>
+              <th
+                key={i}
+                scope="col"
+                data-align={column.align ?? (i === 0 ? "start" : "end")}
+              >
                 {column.label}
               </th>
             ))}
@@ -40,7 +45,11 @@ export function DataTable<T>({
           {rows.map((row, i) => (
             <tr key={i}>
               {columns.map((column, j) => (
-                <td key={j} data-align={column.align}>
+                <td
+                  key={j}
+                  data-align={column.align ?? (j === 0 ? "start" : "end")}
+                  data-wrap={column.wrap || undefined}
+                >
                   {column.render(row)}
                 </td>
               ))}

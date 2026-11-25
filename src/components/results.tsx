@@ -67,6 +67,7 @@ export function HistoryChart({ rows }: { rows: HistoryRow[] }) {
             { label: "Ronde", render: (r) => integer(r.round_number) },
             {
               label: "Protokol",
+              align: "start",
               render: (r) => <ProtocolName name={r.protocol} />,
             },
             { label: "Node hidup", render: (r) => integer(r.alive_nodes) },

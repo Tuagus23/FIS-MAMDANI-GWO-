@@ -16,10 +16,10 @@ const definitions: { key: Variable; title: string; unit: string }[] = [
 export function MembershipView({ data }: { data: DashboardData }) {
   return (
     <>
-      <div className="membership-grid grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="membership-grid">
         {definitions.map((item) => (
           <article key={item.key} className="membership-card">
-            <h3>{item.title}</h3>
+            <h2>{item.title}</h2>
             <p>{item.unit}</p>
             <div className="membership-comparison-grid">
               <MembershipPlot
