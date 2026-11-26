@@ -1,6 +1,10 @@
 export default function Team() {
   return (
-    <div className="content-stack">
+    <section
+      id="view-anggota"
+      className="view-section content-stack"
+      aria-labelledby="pageTitle"
+    >
       <div className="team-intro panel">
         <div>
           <h2 className="panel-title">Kelompok 3 · Pengantar Komputasi Lunak</h2>
@@ -16,11 +20,13 @@ export default function Team() {
           <div className="member-photo-wrap">
             <img
               className="member-photo"
-              src="/images/team/putu-agus-putra-darmawan.png"
-              width="480"
-              height="520"
+              src="/images/team/putu-agus-putra-darmawan.webp"
+              width="840"
+              height="692"
               alt="Foto I Putu Agus Putra Darmawan"
               loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
             <span className="member-number">01</span>
           </div>
@@ -40,11 +46,13 @@ export default function Team() {
           <div className="member-photo-wrap">
             <img
               className="member-photo"
-              src="/images/team/dewa-putu-adrian-paramarta.png"
-              width="480"
-              height="520"
+              src="/images/team/dewa-putu-adrian-paramarta.webp"
+              width="705"
+              height="864"
               alt="Foto Dewa Putu Adrian Paramarta"
               loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
             <span className="member-number">02</span>
           </div>
@@ -64,11 +72,13 @@ export default function Team() {
           <div className="member-photo-wrap">
             <img
               className="member-photo"
-              src="/images/team/gede-rama-yasa-mahendra.png"
-              width="480"
-              height="520"
+              src="/images/team/gede-rama-yasa-mahendra.webp"
+              width="648"
+              height="864"
               alt="Foto I Gede Rama Yasa Mahendra"
               loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
             <span className="member-number">03</span>
           </div>
@@ -89,11 +99,13 @@ export default function Team() {
           <div className="member-photo-wrap">
             <img
               className="member-photo"
-              src="/images/team/aa-jaya-kesuma-wardana.png"
-              width="480"
-              height="520"
+              src="/images/team/aa-jaya-kesuma-wardana.webp"
+              width="573"
+              height="864"
               alt="Foto A.A. Jaya Kesuma Wardana"
               loading="lazy"
+              decoding="async"
+              fetchPriority="low"
             />
             <span className="member-number">04</span>
           </div>
@@ -109,6 +121,6 @@ export default function Team() {
           </div>
         </article>
       </div>
-    </div>
+    </section>
   );
 }

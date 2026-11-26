@@ -14,7 +14,6 @@ const Fis = dynamic(() => import("./fis").then((m) => m.FisView));
 const Simulation = dynamic(() =>
   import("./simulation").then((m) => m.SimulationView),
 );
-const Team = dynamic(() => import("./team"));
 const Motto = dynamic(() => import("./motto"));
 const Users = dynamic(() => import("./users"));
 export function DashboardView({ view }: { view: View }) {
@@ -28,8 +27,6 @@ export function DashboardView({ view }: { view: View }) {
     >
       {view === "pengguna" ? (
         <Users />
-      ) : view === "anggota" ? (
-        <Team />
       ) : view === "motto" ? (
         <Motto />
       ) : data ? (
