@@ -62,13 +62,18 @@ export function FisView({ data }: { data: DashboardData }) {
   const result = useMemo(
     () =>
       valid
-        ? calculateFis(membership, data.fis_process, {
-            energy: Number(draft.energy),
-            distance: Number(draft.distance),
-            neighbors: Number(draft.neighbors),
-          })
+        ? calculateFis(
+            membership,
+            data.fis_process,
+            {
+              energy: Number(draft.energy),
+              distance: Number(draft.distance),
+              neighbors: Number(draft.neighbors),
+            },
+            data.membership_ranges,
+          )
         : null,
-    [membership, data.fis_process, draft, valid],
+    [membership, data.fis_process, data.membership_ranges, draft, valid],
   );
   return (
     <>

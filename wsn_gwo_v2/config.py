@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+NEIGHBOR_INPUT_CAP = 20
+
+
 @dataclass(frozen=True)
 class SimulationConfig:
     nodes: int = 30

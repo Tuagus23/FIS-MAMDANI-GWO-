@@ -86,7 +86,12 @@ export function bestRows(
   const max = Math.max(...eligible.map(score));
   return eligible.filter((row) => score(row) === max);
 }
-export function degree(spec: MembershipSpec, x: number): number {
+export function degree(
+  spec: MembershipSpec,
+  value: number,
+  inputCap = Infinity,
+): number {
+  const x = Math.min(value, inputCap);
   const [a, b, c, d] = spec.points;
   const left = a === b ? (x >= a ? 1 : 0) : (x - a) / (b - a);
   const right =

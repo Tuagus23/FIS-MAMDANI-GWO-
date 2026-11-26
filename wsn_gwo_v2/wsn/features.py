@@ -4,7 +4,7 @@ from math import hypot
 
 import numpy as np
 
-from ..config import SimulationConfig
+from ..config import NEIGHBOR_INPUT_CAP, SimulationConfig
 from .models import Node, NodeFeatures
 
 
@@ -42,5 +42,5 @@ class NetworkFeatureExtractor:
         distances = np.hypot(differences[:, :, 0], differences[:, :, 1])
         neighbor_mask = distances <= self.config.neighbor_radius_m
         np.fill_diagonal(neighbor_mask, False)
-        return np.minimum(np.sum(neighbor_mask, axis=1), 20).astype(float)
+        return np.minimum(np.sum(neighbor_mask, axis=1), NEIGHBOR_INPUT_CAP).astype(float)
 

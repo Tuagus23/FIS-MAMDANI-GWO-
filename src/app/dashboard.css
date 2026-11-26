@@ -798,6 +798,24 @@ summary {
   z-index: 1;
   background: #edf3ee;
 }
+.membership-card .chart-data-details .table-wrap {
+  padding-inline: 0;
+  scrollbar-gutter: auto;
+  scrollbar-color: #718e7e var(--paper);
+  background: var(--paper);
+}
+.membership-card .chart-data-details .table-wrap::-webkit-scrollbar-track {
+  background: var(--paper);
+}
+.membership-card .chart-data-details .table-wrap::-webkit-scrollbar-thumb {
+  border-color: var(--paper);
+}
+.membership-card .data-table :is(th, td):first-child {
+  padding-inline-start: 14px;
+}
+.membership-card .data-table :is(th, td):last-child {
+  padding-inline-end: 14px;
+}
 .data-table th[data-align="start"],
 .data-table td[data-align="start"] {
   text-align: left;

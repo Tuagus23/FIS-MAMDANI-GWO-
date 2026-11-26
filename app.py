@@ -20,7 +20,7 @@ from auth import (
     public_auth_config,
     verify_authorization_header,
 )
-from wsn_gwo_v2.config import SimulationConfig
+from wsn_gwo_v2.config import NEIGHBOR_INPUT_CAP, SimulationConfig
 from wsn_gwo_v2.fuzzy import FuzzyRuleBase, MembershipSet
 from wsn_gwo_v2.wsn import NetworkSimulator, create_topology
 
@@ -146,6 +146,7 @@ def _membership_ranges(membership: dict, baseline: dict, nodes: int) -> dict:
         "neighbors": {
             "min": 0,
             "max": max(nodes - 1, support_max(membership.get("neighbors", {}), baseline.get("neighbors", {}))),
+            "input_cap": NEIGHBOR_INPUT_CAP,
         },
         "output": {"min": 0, "max": 1},
     }

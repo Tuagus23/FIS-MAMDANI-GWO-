@@ -49,6 +49,11 @@ export interface MembershipSpec {
   points: number[];
 }
 export type Membership = Record<Variable, Record<string, MembershipSpec>>;
+export interface MembershipRange {
+  min: number;
+  max: number;
+  input_cap?: number;
+}
 export interface Rule {
   energy: string;
   distance: string;
@@ -72,7 +77,7 @@ export interface DashboardData {
   validation_rows: SeedRow[];
   membership: Membership;
   membership_baseline: Membership;
-  membership_ranges: Record<Variable, { min: number; max: number }>;
+  membership_ranges: Record<Variable, MembershipRange>;
   fis_process: FisProcess;
 }
 export interface DatasetsResponse {

@@ -1,9 +1,15 @@
-import type { FisProcess, InputVariable, Membership } from "./types";
+import type {
+  FisProcess,
+  InputVariable,
+  Membership,
+  MembershipRange,
+} from "./types";
 import { degree } from "./data";
 export function calculateFis(
   membership: Membership,
   fis: FisProcess,
   inputs: Record<InputVariable, number>,
+  ranges: Record<InputVariable, MembershipRange>,
 ) {
   const variables = ["energy", "distance", "neighbors"] as const;
   const degrees = Object.fromEntries(
@@ -12,7 +18,7 @@ export function calculateFis(
       Object.fromEntries(
         Object.entries(membership[key]).map(([label, spec]) => [
           label,
-          degree(spec, inputs[key]),
+          degree(spec, inputs[key], ranges[key].input_cap),
         ]),
       ),
     ]),

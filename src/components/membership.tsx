@@ -1,8 +1,19 @@
 "use client";
 import { useMemo } from "react";
 import type { ChartConfiguration } from "chart.js";
-import type { DashboardData, MembershipSpec, Variable } from "@/lib/types";
-import { decimal, degree, initialColors, optimizedColors } from "@/lib/data";
+import type {
+  DashboardData,
+  MembershipRange,
+  MembershipSpec,
+  Variable,
+} from "@/lib/types";
+import {
+  decimal,
+  degree,
+  initialColors,
+  integer,
+  optimizedColors,
+} from "@/lib/data";
 import { chartOptions } from "@/lib/charts";
 import { downloadFile } from "@/lib/download";
 import { Chart } from "./chart";
@@ -14,6 +25,7 @@ const definitions: { key: Variable; title: string; unit: string }[] = [
   { key: "output", title: "Skor kelayakan", unit: "skor Mamdani" },
 ];
 export function MembershipView({ data }: { data: DashboardData }) {
+  const neighborCap = data.membership_ranges.neighbors.input_cap;
   return (
     <>
       <div className="membership-grid">
@@ -21,6 +33,14 @@ export function MembershipView({ data }: { data: DashboardData }) {
           <article key={item.key} className="membership-card">
             <h2>{item.title}</h2>
             <p>{item.unit}</p>
+            {item.key === "neighbors" &&
+              neighborCap !== undefined &&
+              neighborCap < data.membership_ranges.neighbors.max && (
+                <p>
+                  Di atas {integer(neighborCap)} tetangga, derajat keanggotaan
+                  sama dengan {integer(neighborCap)} tetangga.
+                </p>
+              )}
             <div className="membership-comparison-grid">
               <MembershipPlot
                 title="MF awal"
@@ -82,7 +102,7 @@ function MembershipPlot({
 }: {
   title: string;
   group: Record<string, MembershipSpec>;
-  range: { min: number; max: number };
+  range: MembershipRange;
   initial?: boolean;
 }) {
   const config = useMemo<ChartConfiguration>(() => {
@@ -100,7 +120,7 @@ function MembershipPlot({
       data: {
         datasets: Object.entries(group).map(([label, spec], index) => ({
           label,
-          data: values.map((x) => ({ x, y: degree(spec, x) })),
+          data: values.map((x) => ({ x, y: degree(spec, x, range.input_cap) })),
           borderColor: (initial ? initialColors : optimizedColors)[index % 3],
           backgroundColor: (initial ? initialColors : optimizedColors)[
             index % 3
@@ -152,6 +172,7 @@ function MembershipTable({
   variable: Variable;
 }) {
   const range = data.membership_ranges[variable];
+  const countsNeighbors = variable === "neighbors";
   const models =
     variable === "output"
       ? [{ name: "MF awal (tetap)", group: data.membership_baseline[variable] }]
@@ -159,26 +180,34 @@ function MembershipTable({
           { name: "MF awal", group: data.membership_baseline[variable] },
           { name: "GWO", group: data.membership[variable] },
         ];
-  const values = [
-    ...new Set([
-      ...Array.from(
-        { length: 21 },
-        (_, i) => range.min + ((range.max - range.min) * i) / 20,
-      ),
-      ...models.flatMap((model) =>
-        Object.values(model.group).flatMap((spec) => spec.points),
-      ),
-    ]),
-  ].sort((a, b) => a - b);
+  const values = countsNeighbors
+    ? Array.from(
+        { length: Math.floor(range.max) - range.min + 1 },
+        (_, i) => range.min + i,
+      )
+    : [
+        ...new Set([
+          ...Array.from(
+            { length: 21 },
+            (_, i) => range.min + ((range.max - range.min) * i) / 20,
+          ),
+          ...models.flatMap((model) =>
+            Object.values(model.group).flatMap((spec) => spec.points),
+          ),
+        ]),
+      ].sort((a, b) => a - b);
   return (
     <DataTable
       rows={values}
       columns={[
-        { label: "Nilai input", render: (x) => decimal(x) },
+        {
+          label: countsNeighbors ? "Jumlah tetangga" : "Nilai input",
+          render: countsNeighbors ? integer : decimal,
+        },
         ...models.flatMap((model) =>
           Object.entries(model.group).map(([label, spec]) => ({
             label: `${model.name} · ${label}`,
-            render: (x: number) => decimal(degree(spec, x)),
+            render: (x: number) => decimal(degree(spec, x, range.input_cap)),
           })),
         ),
       ]}
