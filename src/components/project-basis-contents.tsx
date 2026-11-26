@@ -48,7 +48,7 @@ export function ProjectBasisContents({ topics }: { topics: readonly ContentsItem
   }, [topics]);
 
   return (
-    <nav className={styles.contents} aria-label="Daftar isi Dasar proyek">
+    <nav className={styles.contents} aria-label="Daftar isi Dasar proyek" data-project-contents>
       <h2>Di halaman ini</h2>
       <ol>
         {topics.map(({ id, short }, index) => (

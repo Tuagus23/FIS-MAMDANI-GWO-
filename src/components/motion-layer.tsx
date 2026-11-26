@@ -5,16 +5,40 @@ import type Lenis from "lenis";
 export function MotionLayer({ route }: { route: string }) {
   const scroll = useRef<Lenis | null>(null);
   useEffect(() => {
-    if (route === "/dasar-proyek") {
-      const anchor = document.getElementById(window.location.hash.slice(1));
-      if (anchor) {
-        if (scroll.current) {
-          scroll.current.scrollTo(anchor, { immediate: true, force: true });
-        } else {
-          anchor.scrollIntoView({ behavior: "instant" });
-        }
-        return;
+    function jumpToAnchor(hash: string) {
+      const anchor = document.getElementById(hash.slice(1));
+      if (!anchor) return false;
+
+      if (scroll.current) {
+        scroll.current.scrollTo(anchor, { immediate: true, force: true });
       }
+      anchor.scrollIntoView({ behavior: "instant" });
+      return true;
+    }
+
+    function followHash() {
+      jumpToAnchor(window.location.hash);
+    }
+
+    function followContentsLink(event: MouseEvent) {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return;
+      if (!(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>("a[href^='#']");
+      if (link) jumpToAnchor(link.hash);
+    }
+
+    if (route === "/dasar-proyek") {
+      if (!jumpToAnchor(window.location.hash)) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+      const contents = document.querySelector<HTMLElement>("[data-project-contents]");
+      contents?.addEventListener("click", followContentsLink);
+      window.addEventListener("hashchange", followHash);
+      return () => {
+        contents?.removeEventListener("click", followContentsLink);
+        window.removeEventListener("hashchange", followHash);
+      };
     }
     if (scroll.current)
       scroll.current.scrollTo(0, { immediate: true, force: true });
