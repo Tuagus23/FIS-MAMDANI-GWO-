@@ -4,6 +4,7 @@ export function NavIcon({ view }: { view: View }) {
     pengguna:
       "M7 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6M2 17c0-6 10-6 10 0M15 9l4 2v3c0 2-2 4-4 5-2-1-4-3-4-5v-3z",
     hasil: "M3 3h5v5H3zM12 3h5v5h-5zM3 12h5v5H3zM12 12h5v5h-5z",
+    "dasar-proyek": "M4 3h8l4 4v10H4zM12 3v4h4M7 10h6m-6 4h6",
     validasi: "M10 2 17 5v5c0 4-4 7-7 8-3-1-7-4-7-8V5zM6 10l3 3 5-6",
     membership: "M2 16c3 0 3-12 7-12s3 12 7 12 2-4 2-4",
     gwo: "M4 5h12M4 5l6 11 6-11M2 3h4v4H2zM14 3h4v4h-4zM8 14h4v4H8z",

@@ -4,6 +4,7 @@ export type InputVariable = Exclude<Variable, "output">;
 export type Metric = "FND" | "HND" | "LND" | "PDR_pct" | "lifetime_index";
 export type View =
   | "hasil"
+  | "dasar-proyek"
   | "validasi"
   | "membership"
   | "gwo"

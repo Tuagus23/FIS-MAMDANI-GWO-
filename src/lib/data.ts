@@ -6,6 +6,10 @@ export const views: Record<View, { title: string; description: string }> = {
     description:
       "Bandingkan umur jaringan dan keberhasilan pengiriman tiga protokol.",
   },
+  "dasar-proyek": {
+    title: "Dasar proyek",
+    description: "Alasan pemilihan metode, landasan literatur, dan celah yang diuji.",
+  },
   validasi: {
     title: "Validasi model",
     description:

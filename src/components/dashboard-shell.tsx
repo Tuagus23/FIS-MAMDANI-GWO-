@@ -14,7 +14,7 @@ import type { View } from "@/lib/types";
 import { MotionLayer } from "./motion-layer";
 
 const groups: { label: string; items: View[] }[] = [
-  { label: "Analisis", items: ["hasil", "validasi", "membership"] },
+  { label: "Analisis", items: ["dasar-proyek", "hasil", "validasi", "membership"] },
   { label: "Eksplorasi", items: ["gwo", "fis", "simulasi"] },
   { label: "Kelompok", items: ["anggota", "motto"] },
 ];
@@ -32,8 +32,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const view: View = Object.hasOwn(views, pathname.slice(1))
     ? (pathname.slice(1) as View)
     : "hasil";
-  const personalPage =
-    view === "anggota" || view === "motto" || view === "pengguna";
+  const usesDataset =
+    view !== "dasar-proyek" &&
+    view !== "anggota" &&
+    view !== "motto" &&
+    view !== "pengguna";
   const visibleGroups =
     info?.identity.role === "super_admin"
       ? [...groups, { label: "Administrasi", items: ["pengguna"] as View[] }]
@@ -263,7 +266,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 </button>
               )}
             </div>
-            {!personalPage && (
+            {usesDataset && (
               <section className="dataset-toolbar" aria-label="Dataset aktif">
                 <div className="dataset-picker">
                   <label htmlFor="datasetSelect">Dataset eksperimen</label>
@@ -289,7 +292,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               </section>
             )}
             {logoutError && <Notice error>{logoutError}</Notice>}
-            {error && !personalPage && (
+            {error && usesDataset && (
               <Notice error>
                 {error}
                 <button className="button button-quiet" onClick={retry}>
@@ -297,7 +300,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 </button>
               </Notice>
             )}
-            {loading && !personalPage && (
+            {loading && usesDataset && (
               <p className="loading-label" role="status">
                 <span className="loading-indicator" aria-hidden="true" />
                 Memuat data eksperimen…

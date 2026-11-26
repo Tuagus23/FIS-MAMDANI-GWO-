@@ -14,7 +14,7 @@ class AccessConflict(Exception):
     pass
 
 
-DASHBOARD_PAGES = frozenset({"/", "/validasi", "/membership", "/gwo", "/fis", "/simulasi", "/anggota", "/motto", "/pengguna"})
+DASHBOARD_PAGES = frozenset({"/", "/dasar-proyek", "/validasi", "/membership", "/gwo", "/fis", "/simulasi", "/anggota", "/motto", "/pengguna"})
 
 
 def _request(path: str, token: str, payload: dict | None = None) -> object:

@@ -20,6 +20,7 @@ const roleLabel = (role: UserRole) =>
   role === "super_admin" ? "Super admin" : "Pengguna";
 const pageLabel: Record<string, string> = {
   "/": "Ringkasan",
+  "/dasar-proyek": "Dasar proyek",
   "/validasi": "Validasi model",
   "/membership": "Fungsi keanggotaan",
   "/gwo": "Proses GWO",
