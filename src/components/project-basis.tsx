@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProjectBasisContents } from "./project-basis-contents";
 import styles from "./project-basis.module.css";
 
 const papers = {
@@ -7,14 +8,16 @@ const papers = {
     title: "Energy-Efficient Fuzzy-Logic-Based Clustering Technique for Hierarchical Routing Protocols in Wireless Sensor Networks",
     doi: "10.3390/s19030561",
     page: "Bagian 3.2, PDF hlm. 8",
-    quote: "taken based on the trial-and-error method over tens of experiments",
+    quote: "The number of membership functions and their overlaps for each of the inputs/output linguistic variables are taken based on the trial-and-error method […]",
+    meaning: "Jumlah fungsi keanggotaan dan tumpang tindihnya ditetapkan melalui proses coba-coba.",
   },
   mirjalili: {
     author: "Mirjalili, Mirjalili, dan Lewis (2014)",
     title: "Grey Wolf Optimizer",
     doi: "10.1016/j.advengsoft.2013.12.007",
     page: "Abstrak, PDF hlm. 1",
-    quote: "very competitive results compared to these well-known meta-heuristics",
+    quote: "The results show that the GWO algorithm is able to provide very competitive results compared to these well-known meta-heuristics.",
+    meaning: "GWO memberi hasil yang kompetitif terhadap metode pembanding pada pengujian paper tersebut.",
   },
   zhang: {
     author: "Zhang, Wang, dan Zhang (2009)",
@@ -22,48 +25,55 @@ const papers = {
     doi: "10.1109/ICWAPR.2009.5207463",
     page: "Bagian 2, PDF hlm. 2 (hlm. 466 pada prosiding)",
     quote: "assume the fuzzy control rules are predefined",
+    meaning: "Metode penyetelan MF ini memakai aturan fuzzy yang sudah ditetapkan.",
   },
   verma: {
     author: "Verma dan Baliyan (2021)",
     title: "Grey Wolf Optimization with Fuzzy Logic for Energy-Efficient Communication in Wireless Sensor Network-Based Internet of Things Scenario",
     doi: "10.1002/dac.4981",
     page: "Ringkasan, PDF hlm. 1",
-    quote: "CH selection is accomplished using fuzzy inference-based system",
+    quote: "Clustering is achieved using nature-inspired grey wolf optimization (GWO) algorithm, and CH selection is accomplished using fuzzy inference-based system.",
+    meaning: "GWO dipakai untuk membentuk klaster. Pemilihan cluster head dilakukan dengan inferensi fuzzy.",
   },
   sennan: {
     author: "Sennan dkk. (2026)",
     title: "A Multi-Objective Grey Wolf Optimization Algorithm for Energy-Efficient Cluster-Based Routing in IoT-Enabled WSNs",
     doi: "10.1038/s41598-025-28950-2",
     page: "Abstrak, PDF hlm. 1",
-    quote: "fitness function that uses fuzzy logic to evaluate potential CHs",
+    quote: "MOGWO employs a fitness function that uses fuzzy logic to evaluate potential CHs based on distance, number of neighbouring nodes, and residual energy.",
+    meaning: "MOGWO memakai fuzzy di dalam fungsi fitness untuk menilai kandidat cluster head dari tiga kondisi node.",
   },
   herrera: {
     author: "Herrera, Lozano, dan Verdegay (1995)",
     title: "Tuning Fuzzy Logic Controllers by Genetic Algorithms",
     doi: "10.1016/0888-613X(94)00033-Y",
     page: "Abstrak, PDF hlm. 1 (hlm. 299 pada jurnal)",
-    quote: "depends on its control rules and membership functions",
+    quote: "The performance of a fuzzy logic controller depends on its control rules and membership functions.",
+    meaning: "Performa pengendali fuzzy dipengaruhi oleh aturan dan fungsi keanggotaan.",
   },
   wang: {
     author: "Wang (2023)",
     title: "A Distributed Particle-Swarm-Optimization-Based Fuzzy Clustering Protocol for Wireless Sensor Networks",
     doi: "10.3390/s23156699",
     page: "Abstrak, PDF hlm. 1",
-    quote: "applied to optimize the fuzzy rules",
+    quote: "Moreover, a particle swarm optimization (PSO) algorithm is applied to optimize the fuzzy rules, instead of conventional manual design.",
+    meaning: "Wang menggunakan PSO untuk menyetel basis aturan fuzzy.",
   },
   giri: {
     author: "Giri, Dutta, dan Neogy (2022)",
     title: "An Optimized Fuzzy Clustering Algorithm for Wireless Sensor Networks",
     doi: "10.1007/s11277-022-09839-z",
     page: "Abstrak, PDF hlm. 1 (hlm. 2731 pada jurnal)",
-    quote: "an energy efficient routing path is determined utilizing other cluster heads",
+    quote: "an energy efficient routing path is determined utilizing other cluster heads by particle swarm optimization",
+    meaning: "Dalam studi ini, PSO mencari rute hemat energi melalui cluster head lain.",
   },
   zehra: {
     author: "Zehra dkk. (2024)",
     title: "A Grey Wolf-Driven Refinement of Fuzzy-Based Controller for Enhanced DC Microgrid Operation",
     doi: "10.1109/FUZZ-IEEE60900.2024.10611774",
     page: "Abstrak, PDF hlm. 1",
-    quote: "selecting the spread of membership functions of the FIS through GWO",
+    quote: "to eliminate the hit-and-trial method for selecting the spread of membership functions of the FIS through GWO",
+    meaning: "Zehra dkk. menggunakan GWO untuk membantu menentukan lebar kurva MF pada pengendali mikrogrid.",
   },
 } as const;
 
@@ -77,17 +87,34 @@ const topics = [
   { id: "celah-literatur", short: "Celah literatur", title: "Celah apa yang diuji proyek ini?" },
 ] as const;
 
+const contents = [...topics, { id: "daftar-pustaka", short: "Daftar pustaka" }];
+
 function Source({ paper }: { paper: Paper }) {
   return <a href={`#rujukan-${paper}`}>{papers[paper].author}</a>;
 }
 
 function Excerpt({ paper }: { paper: Paper }) {
-  const { quote, page, doi } = papers[paper];
+  const { quote, meaning, page, doi } = papers[paper];
   return (
     <figure className={styles.excerpt}>
       <blockquote lang="en" cite={`https://doi.org/${doi}`}>“{quote}”</blockquote>
-      <figcaption><Source paper={paper} /> · {page}</figcaption>
+      <figcaption>
+        <p className={styles.meaning}><strong>Makna kutipan</strong> {meaning}</p>
+        <div className={styles.excerptSource}>
+          <a href={`https://doi.org/${doi}`}>{papers[paper].author}</a>
+          <span>{page}</span>
+        </div>
+      </figcaption>
     </figure>
+  );
+}
+
+function Evidence({ sources }: { sources: Paper[] }) {
+  return (
+    <div className={styles.evidence}>
+      <h3>Kutipan asli dari paper</h3>
+      {sources.map((paper) => <Excerpt key={paper} paper={paper} />)}
+    </div>
   );
 }
 
@@ -135,13 +162,7 @@ export function ProjectBasis() {
       </section>
 
       <div className={styles.readingLayout}>
-        <nav className={styles.contents} aria-label="Daftar isi Dasar proyek">
-          <h2>Di halaman ini</h2>
-          <ol>
-            {topics.map(({ id, short }) => <li key={id}><a href={`#${id}`}>{short}</a></li>)}
-          </ol>
-          <a href="#daftar-pustaka">Daftar pustaka</a>
-        </nav>
+        <ProjectBasisContents topics={contents} />
 
         <div className={styles.article}>
           <Answer topic={topics[0]}>
@@ -158,7 +179,7 @@ export function ProjectBasis() {
               Kalibrasi mencari kurva dengan fitness simulasi yang lebih baik pada
               topologi dan bobot yang ditetapkan.
             </p>
-            <Excerpt paper="hamzah" />
+            <Evidence sources={["hamzah"]} />
           </Answer>
 
           <Answer topic={topics[1]}>
@@ -193,7 +214,7 @@ export function ProjectBasis() {
               metode lain memerlukan perbandingan langsung dengan fitness,
               seed, dan jumlah evaluasi yang sama.
             </p>
-            <Excerpt paper="mirjalili" />
+            <Evidence sources={["mirjalili"]} />
           </Answer>
 
           <Answer topic={topics[2]}>
@@ -214,8 +235,7 @@ export function ProjectBasis() {
                 </dd>
               </div>
             </dl>
-            <Excerpt paper="verma" />
-            <Excerpt paper="sennan" />
+            <Evidence sources={["verma", "sennan"]} />
           </Answer>
 
           <Answer topic={topics[3]}>
@@ -233,9 +253,7 @@ export function ProjectBasis() {
               aturan. Untuk menguji keduanya, perlu skenario terpisah untuk MF saja,
               aturan saja, dan kombinasi keduanya, dengan anggaran evaluasi setara.
             </p>
-            <Excerpt paper="herrera" />
-            <Excerpt paper="zhang" />
-            <Excerpt paper="wang" />
+            <Evidence sources={["herrera", "zhang", "wang"]} />
             <Link className={styles.inlineAction} href="/membership">Bandingkan kurva MF awal dan GWO</Link>
           </Answer>
 
@@ -246,8 +264,7 @@ export function ProjectBasis() {
               dengan GWO pada pengendali mikrogrid. Giri dkk. memakai masukan fuzzy
               yang serupa di WSN dan menempatkan optimasi PSO pada pemilihan rute.
             </p>
-            <Excerpt paper="giri" />
-            <Excerpt paper="zehra" />
+            <Evidence sources={["giri", "zehra"]} />
             <div className={styles.finding}>
               <h3>Celah yang diuji dalam proyek</h3>
               <p>

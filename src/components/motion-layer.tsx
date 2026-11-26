@@ -5,6 +5,17 @@ import type Lenis from "lenis";
 export function MotionLayer({ route }: { route: string }) {
   const scroll = useRef<Lenis | null>(null);
   useEffect(() => {
+    if (route === "/dasar-proyek") {
+      const anchor = document.getElementById(window.location.hash.slice(1));
+      if (anchor) {
+        if (scroll.current) {
+          scroll.current.scrollTo(anchor, { immediate: true, force: true });
+        } else {
+          anchor.scrollIntoView({ behavior: "instant" });
+        }
+        return;
+      }
+    }
     if (scroll.current)
       scroll.current.scrollTo(0, { immediate: true, force: true });
     else window.scrollTo({ top: 0, behavior: "instant" });
