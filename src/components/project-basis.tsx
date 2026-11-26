@@ -55,9 +55,33 @@ const papers = {
     author: "Wang (2023)",
     title: "A Distributed Particle-Swarm-Optimization-Based Fuzzy Clustering Protocol for Wireless Sensor Networks",
     doi: "10.3390/s23156699",
-    page: "Abstrak, PDF hlm. 1",
-    quote: "Moreover, a particle swarm optimization (PSO) algorithm is applied to optimize the fuzzy rules, instead of conventional manual design.",
-    meaning: "Wang menggunakan PSO untuk menyetel basis aturan fuzzy.",
+    page: "Persamaan 5, PDF hlm. 11",
+    quote: "maximizes the chance value by the defuzzifier",
+    meaning: "Saat menyetel aturan dengan PSO, Wang menilai kandidat dari skor Chance yang dihasilkan defuzzifikasi.",
+  },
+  ghosh: {
+    author: "Ghosh, Banerjee, dan Sherratt (2019)",
+    title: "On-Demand Fuzzy Clustering and Ant-Colony Optimisation Based Mobile Data Collection in Wireless Sensor Network",
+    doi: "10.1007/s11276-017-1635-6",
+    page: "Persamaan 15, PDF hlm. 18 (hlm. 16 pada naskah)",
+    quote: "Thus, Chance is considered to be the fitness function",
+    meaning: "Saat menyetel MF dengan PSO, studi ini memakai skor kelayakan cluster head sebagai fitness.",
+  },
+  laxman: {
+    author: "Laxman, Annamraju, dan Srikanth (2021)",
+    title: "A Grey Wolf Optimized Fuzzy Logic Based MPPT for Shaded Solar Photovoltaic Systems in Microgrids",
+    doi: "10.1016/j.ijhydene.2020.12.158",
+    page: "PDF hlm. 4 (hlm. 10656 pada jurnal)",
+    quote: "easy implementation structure, less number of controlling parameters and simplicity",
+    meaning: "Penulis memakai kesederhanaan implementasi dan sedikitnya parameter pengendali sebagai alasan memilih GWO pada pengendali panel surya.",
+  },
+  rohilla: {
+    author: "Rohilla dkk. (2022)",
+    title: "Grey Wolf and Fuzzy Logic Based Enhanced Clustering Approach for Energy Efficient Operation of Wireless Sensor Networks",
+    doi: "10.1109/ICCES54183.2022.9835880",
+    page: "Persamaan 14, PDF hlm. 5 (hlm. 599 pada prosiding)",
+    quote: "These weights designate the priority of fitness components.",
+    meaning: "Bobot menyatakan prioritas setiap komponen ketika beberapa kriteria digabung menjadi satu fitness.",
   },
   giri: {
     author: "Giri, Dutta, dan Neogy (2022)",
@@ -84,7 +108,8 @@ const topics = [
   { id: "pilihan-gwo", short: "GWO, GA, dan PSO", title: "Mengapa memilih GWO?" },
   { id: "studi-gwo", short: "Studi GWO terdahulu", title: "Apakah GWO sudah digunakan pada WSN?" },
   { id: "mf-dan-aturan", short: "MF dan basis aturan", title: "Mengapa menyetel MF dan mempertahankan aturan?" },
-  { id: "celah-literatur", short: "Celah literatur", title: "Celah apa yang diuji proyek ini?" },
+  { id: "celah-literatur", short: "Celah literatur", title: "Celah apa yang ditemukan dari literatur?" },
+  { id: "fitness-gwo", short: "Rancangan fitness", title: "Bagaimana fitness GWO ditentukan?" },
 ] as const;
 
 const contents = [...topics, { id: "daftar-pustaka", short: "Daftar pustaka" }];
@@ -175,9 +200,13 @@ export function ProjectBasis() {
             </p>
             <p>
               Hamzah dkk. membangun jumlah dan tumpang tindih MF melalui percobaan
-              berulang. Kurva awal di proyek ini berfungsi sebagai baseline.
+              berulang. Aturan manual juga perlu menimbang kriteria yang
+              bersaing, misalnya apakah node berenergi tinggi tetapi jauh dari
+              stasiun pangkalan lebih layak daripada node dengan energi sedang
+              yang lebih dekat. Kurva awal di proyek ini berfungsi sebagai baseline.
               Kalibrasi mencari kurva dengan fitness simulasi yang lebih baik pada
-              topologi dan bobot yang ditetapkan.
+              topologi dan bobot yang ditetapkan. Perbandingan pada kondisi
+              yang setara menunjukkan apakah pencarian memberi manfaat.
             </p>
             <Evidence sources={["hamzah"]} />
           </Answer>
@@ -209,12 +238,14 @@ export function ProjectBasis() {
             </dl>
             <p>
               Benchmark awal Mirjalili dkk. mendukung kelayakan GWO sebagai
-              metode pencarian. Proyek ini membandingkan konfigurasi FIS
-              sebelum dan sesudah kalibrasi GWO. Peringkat GWO, GA, PSO, atau
-              metode lain memerlukan perbandingan langsung dengan fitness,
-              seed, dan jumlah evaluasi yang sama.
+              metode pencarian. Laxman dkk. menunjukkan contoh pemakaian GWO
+              untuk menyetel parameter MF pada pengendali panel surya.
+              Untuk membandingkan GWO, GA, dan PSO di proyek ini, ketiganya
+              perlu diuji dengan representasi MF, fitness, topologi, dan
+              jumlah evaluasi kandidat yang sama. Pengulangan dengan seed
+              optimizer berbeda membantu mengukur variasi hasil.
             </p>
-            <Evidence sources={["mirjalili"]} />
+            <Evidence sources={["mirjalili", "laxman", "giri"]} />
           </Answer>
 
           <Answer topic={topics[2]}>
@@ -249,37 +280,52 @@ export function ProjectBasis() {
             <p>
               Herrera dkk. menunjukkan bahwa aturan dan MF sama-sama berpengaruh.
               Zhang dkk. memberi contoh kalibrasi MF dengan aturan yang sudah
-              ditetapkan, sementara Wang menunjukkan jalur lain dengan menyetel
-              aturan. Untuk menguji keduanya, perlu skenario terpisah untuk MF saja,
-              aturan saja, dan kombinasi keduanya, dengan anggaran evaluasi setara.
+              ditetapkan, dan Zehra dkk. menyetel MF dengan GWO pada pengendali
+              mikrogrid. Wang menunjukkan bahwa pilihan label keluaran aturan
+              juga dapat dicari. Penyetelan MF mengubah kapan dan seberapa kuat
+              sebuah aturan aktif. Penyetelan aturan dapat mengubah keputusan
+              dari, misalnya, “kelayakan tinggi” menjadi “kelayakan sedang”.
             </p>
-            <Evidence sources={["herrera", "zhang", "wang"]} />
+            <p>
+              Untuk mengukur pengaruh masing-masing, rancangan lanjutan perlu
+              empat konfigurasi: manual, MF saja, aturan saja, dan keduanya.
+              Penyandingan dengan anggaran evaluasi yang sama membantu
+              membedakan pengaruh kalibrasi dari biaya pencarian.
+            </p>
+            <Evidence sources={["herrera", "zhang", "zehra"]} />
             <Link className={styles.inlineAction} href="/membership">Bandingkan kurva MF awal dan GWO</Link>
           </Answer>
 
           <Answer topic={topics[4]}>
             <p>
-              Dari paper yang ditelaah, metode yang paling dekat memakai GWO untuk
-              klaster atau pemilihan CH di WSN. Zehra dkk. langsung menyetel MF
-              dengan GWO pada pengendali mikrogrid. Giri dkk. memakai masukan fuzzy
-              yang serupa di WSN dan menempatkan optimasi PSO pada pemilihan rute.
+              <Source paper="ghosh" /> menyetel MF dengan PSO, sedangkan{" "}
+              <Source paper="wang" /> menyetel aturan dengan PSO. Keduanya
+              menggunakan <em>Chance</em>, yaitu skor kelayakan CH, untuk
+              menilai kandidat selama optimasi. Keduanya juga menilai kinerja
+              jaringan dalam evaluasi. Skor Chance yang tinggi bisa menghasilkan
+              umur jaringan atau PDR yang berbeda ketika beban dan jarak transmisi berubah.
             </p>
-            <Evidence sources={["giri", "zehra"]} />
+            <Evidence sources={["ghosh", "wang"]} />
             <div className={styles.finding}>
-              <h3>Celah yang diuji dalam proyek</h3>
+              <h3>Celah metodologis dari rujukan</h3>
               <p>
-                Berapa besar pengaruh penyetelan MF input dengan GWO terhadap umur
-                jaringan dan pengiriman paket ketika aturan Mamdani tetap dan
-                topologi pengujian dipisahkan dari kalibrasi? Pada rujukan terdekat
-                di atas, pengaruh perubahan kurva belum diuji secara terpisah
-                dengan rancangan WSN ini.
+                Dalam rancangan WSN yang sama, bagaimana umur jaringan dan PDR
+                berubah jika GWO menyetel MF dengan fitness berbasis hasil
+                simulasi dibandingkan dengan fitness berbasis Chance?
+                Kedua rujukan tadi memberi dasar untuk perbandingan ini.
               </p>
             </div>
-            <ol className={styles.method} aria-label="Rancangan eksperimen">
-              <li><strong>Kalibrasi</strong><span>GWO mencari titik kurva input pada seed topologi kalibrasi.</span></li>
-              <li><strong>Bandingkan</strong><span>FUZZY dan GWO memakai aturan dan topologi berpasangan. LEACH menjadi pembanding pada ringkasan eksperimen.</span></li>
-              <li><strong>Validasi</strong><span>Bandingkan FUZZY dan GWO pada 10 seed uji terpisah. Baca ronde kematian node (FND, HND, LND) dan rasio paket yang diterima (PDR).</span></li>
-            </ol>
+            <dl className={styles.comparisons}>
+              <div><dt>FUZZY manual</dt><dd>Baseline dengan MF awal. Sudah diuji.</dd></div>
+              <div><dt>GWO dengan Chance</dt><dd>MF dikalibrasi dari skor kelayakan CH. Pembanding yang perlu diuji.</dd></div>
+              <div><dt>GWO dengan simulasi</dt><dd>MF dikalibrasi dari metrik jaringan. Sudah diuji terhadap FUZZY manual.</dd></div>
+            </dl>
+            <p>
+              Hasil saat ini mengukur dampak kalibrasi MF berbasis simulasi terhadap
+              FUZZY manual pada 10 seed uji yang terpisah. Untuk mengisolasi
+              pengaruh pilihan fitness, bandingkan kedua versi GWO dengan aturan,
+              model jaringan, seed, dan anggaran evaluasi yang sama.
+            </p>
             <p>
               Seed 42 pada eksperimen yang dikalibrasi dengan seed 42 termasuk
               data kalibrasi. Hasil pada seed itu menggambarkan kinerja dalam
@@ -287,6 +333,37 @@ export function ProjectBasis() {
               terpisah.
             </p>
             <Link className={styles.inlineAction} href="/validasi">Lihat hasil validasi model</Link>
+          </Answer>
+
+          <Answer topic={topics[5]}>
+            <p>
+              GWO menentukan cara memperbarui kandidat. Fitness menentukan
+              kandidat seperti apa yang dinilai baik. Rumus fitness dapat
+              dirancang sesuai tujuan penelitian, misalnya memaksimalkan HND,
+              menggabungkan beberapa metrik, atau memaksimalkan HND dengan
+              syarat PDR memenuhi ambang yang ditetapkan.
+            </p>
+            <ol className={styles.method} aria-label="Alur evaluasi fitness">
+              <li><strong>Kandidat MF</strong><span>GWO mengusulkan 13 koordinat untuk kurva input.</span></li>
+              <li><strong>Simulasi jaringan</strong><span>Jalankan kandidat pada topologi kalibrasi yang sama.</span></li>
+              <li><strong>Skor fitness</strong><span>Rata-ratakan hasil antarseed dan gabungkan metrik yang telah dinormalisasi.</span></li>
+            </ol>
+            <p>
+              Pada mode <em>lifetime</em> saat ini, setiap kandidat MF dinilai
+              lewat simulasi pada topologi kalibrasi. Fitness menggabungkan lima
+              ronde kematian node (FND, R10, HND, R90, LND), energi sisa tertinggi
+              pada satu node saat simulasi berakhir, dan PDR. Ronde dinormalisasi
+              dengan batas simulasi, energi dengan energi awal node, dan
+              persentase PDR dibagi 100.
+            </p>
+            <p>
+              Masing-masing dari tujuh komponen diberi bobot awal 0,30. Setelah
+              dibagi jumlah bobot, bobot efektifnya masing-masing 1/7.
+              Milestone yang belum teramati memakai nilai batas simulasi
+              untuk menghitung fitness.
+            </p>
+            <Evidence sources={["rohilla"]} />
+            <Link className={styles.inlineAction} href="/gwo">Lihat komponen fitness di Proses GWO</Link>
           </Answer>
 
           <section id="daftar-pustaka" className={styles.answer} aria-labelledby="judul-pustaka">
