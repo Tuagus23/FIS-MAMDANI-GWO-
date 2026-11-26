@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { ChartConfiguration } from "chart.js";
 import type { DashboardData, Metric } from "@/lib/types";
 import {
@@ -13,7 +14,7 @@ import {
 import { chartOptions, validationConfig } from "@/lib/charts";
 import { downloadCsv } from "@/lib/download";
 import { Chart } from "./chart";
-import { DataTable, Notice, Panel } from "./ui";
+import { DataDetails, DataTable, Notice, Panel } from "./ui";
 export function ValidationView({ data }: { data: DashboardData }) {
   const [metric, setMetric] = useState<Metric>("FND");
   const means = useMemo(() => validationConfig(data), [data]);
@@ -99,6 +100,20 @@ export function ValidationView({ data }: { data: DashboardData }) {
   const conclusionRows = data.validation.filter(
     (row) => row.metric !== "lifetime_index",
   );
+  const lifetimeRows = data.validation.filter((row) =>
+    ["FND", "HND", "LND"].includes(row.metric),
+  );
+  const meanValue = (
+    row: DashboardData["validation"][number],
+    protocol: "FUZZY" | "GWO",
+  ) =>
+    `${decimal(row[`${protocol}_mean`])}${censored(protocol, row.metric) ? "*" : ""}`;
+  const differingWinners = conclusionRows.filter(
+    (row) =>
+      row.GWO_mean !== null &&
+      row.FUZZY_mean !== null &&
+      (row.GWO_wins - row.FUZZY_wins) * (row.GWO_mean - row.FUZZY_mean) < 0,
+  );
   const conclusion = (["FND", "HND", "LND", "PDR_pct"] as const)
     .map((key) => {
       const row = data.validation.find((r) => r.metric === key);
@@ -149,12 +164,40 @@ export function ValidationView({ data }: { data: DashboardData }) {
     <>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Panel
-          title="FUZZY dibanding GWO"
-          caption="Validasi ini membandingkan FUZZY dengan GWO; LEACH tidak termasuk. Milestone yang belum tercapai dinilai pada batas horizon."
+          title={`Rata-rata ${integer(seeds.length)} seed uji`}
+          caption={`Model dari dataset ${data.dataset.label}. Grafik merangkum pengujian FUZZY dan GWO pada topologi validasi.`}
         >
-          <Chart config={means} label="Rata-rata metrik validasi" />
+          <Chart
+            config={means}
+            label={`Rata-rata metrik validasi · ${data.dataset.label} · ${seeds.length} seed uji`}
+          />
+          <DataTable
+            label={`Angka grafik validasi · ${data.dataset.label}`}
+            rows={lifetimeRows}
+            columns={[
+              { label: "Metrik", render: (r) => r.metric },
+              { label: "FUZZY (ronde)", render: (r) => meanValue(r, "FUZZY") },
+              { label: "GWO (ronde)", render: (r) => meanValue(r, "GWO") },
+            ]}
+          />
+          <p className="table-footnote">
+            * Batas bawah rata-rata. Milestone yang belum tercapai dihitung pada
+            batas pengamatan {integer(data.validation_horizon)} ronde.
+          </p>
+          <DataDetails title="Seed uji dan cara membaca hasil">
+            <p className="panel-caption">
+              Seed uji {seeds.map((row) => row.seed).join(", ")}. Batas
+              pengamatan {integer(data.validation_horizon)} ronde.
+            </p>
+            <Link className="button button-quiet" href="/">
+              Lihat hasil eksperimen tunggal di Ringkasan
+            </Link>
+          </DataDetails>
         </Panel>
-        <Panel title="Kesimpulan validasi">
+        <Panel
+          title="Jumlah kemenangan per seed"
+          caption={`FUZZY dan GWO diuji pada ${integer(seeds.length)} seed dari dataset ${data.dataset.label}.`}
+        >
           <p className="sr-only">{conclusion}.</p>
           <div className="validation-wins-key" aria-hidden="true">
             <span>
@@ -179,9 +222,8 @@ export function ValidationView({ data }: { data: DashboardData }) {
                   </strong>
                   <span>
                     {row.GWO_wins === row.FUZZY_wins
-                      ? "Seimbang"
-                      : `${row.GWO_wins > row.FUZZY_wins ? "GWO" : "FUZZY"} unggul`}{" "}
-                    · {row.seed_count} seed
+                      ? "Jumlah kemenangan sama"
+                      : `${row.GWO_wins > row.FUZZY_wins ? "GWO" : "FUZZY"} menang ${Math.max(row.GWO_wins, row.FUZZY_wins)} dari ${row.seed_count} seed`}
                   </span>
                 </div>
                 <div
@@ -209,10 +251,22 @@ export function ValidationView({ data }: { data: DashboardData }) {
             ))}
           </div>
           <p className="panel-caption">
-            Setiap segmen menunjukkan jumlah seed yang dimenangi. Nilai metrik
-            lebih besar dihitung lebih baik; milestone tersensor dibandingkan
-            pada batas horizon.
+            Setiap seed dihitung satu kali. Nilai metrik lebih besar dihitung
+            lebih baik. Rata-rata pada grafik juga dipengaruhi besar selisih
+            nilai di setiap seed.
           </p>
+          {differingWinners.map((row) => {
+            const countWinner = row.GWO_wins > row.FUZZY_wins ? "GWO" : "FUZZY";
+            const meanWinner =
+              row.GWO_mean! > row.FUZZY_mean! ? "GWO" : "FUZZY";
+            return (
+              <p className="table-footnote" key={row.metric}>
+                {row.metric === "PDR_pct" ? "PDR" : row.metric} — {countWinner}{" "}
+                menang pada lebih banyak seed. Rata-rata {meanWinner} lebih
+                tinggi karena besar selisih nilai antarseed.
+              </p>
+            );
+          })}
         </Panel>
       </div>
       <Panel

@@ -4,7 +4,7 @@ import type {
   ScriptableContext,
 } from "chart.js";
 import type { DashboardData, HistoryRow, Summary } from "./types";
-import { colors, protocols, shapes, milestone } from "./data";
+import { colors, decimal, integer, protocols, shapes, milestone } from "./data";
 export function chartOptions(yLabel: string): ChartOptions {
   return {
     responsive: true,
@@ -121,6 +121,40 @@ export function validationConfig(data: DashboardData): ChartConfiguration {
         maxBarThickness: 28,
       })),
     },
-    options: chartOptions("Rata-rata ronde"),
+    options: {
+      ...chartOptions("Rata-rata ronde"),
+      plugins: {
+        ...chartOptions("").plugins,
+        tooltip: {
+          callbacks: {
+            title: (items) => `${items[0].label} · ${data.dataset.label}`,
+            label: (ctx) => {
+              const protocol = ctx.dataset.label as "FUZZY" | "GWO";
+              const row = rows[ctx.dataIndex];
+              const censored = data.validation_rows.filter(
+                (seed) => seed[`${protocol}_${row.metric}`] == null,
+              ).length;
+              return `${protocol}: ${decimal(row[`${protocol}_mean`])} ronde${censored ? " *" : ""}`;
+            },
+            footer: (items) => {
+              const row = rows[items[0].dataIndex];
+              const censored = data.validation_rows.some(
+                (seed) =>
+                  seed[`FUZZY_${row.metric}`] == null ||
+                  seed[`GWO_${row.metric}`] == null,
+              );
+              return [
+                `Rata-rata ${row.seed_count} seed uji`,
+                ...(censored
+                  ? [
+                      `* Batas bawah, pengamatan ${integer(data.validation_horizon)} ronde`,
+                    ]
+                  : []),
+              ];
+            },
+          },
+        },
+      },
+    },
   };
 }
