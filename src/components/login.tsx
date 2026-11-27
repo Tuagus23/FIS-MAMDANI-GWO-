@@ -57,6 +57,7 @@ export function Login() {
     const audio = failureAudio.current;
     if (!audio) return;
     audio.pause();
+    audio.volume = 0.1;
     audio.currentTime = 0;
     try {
       await audio.play();
