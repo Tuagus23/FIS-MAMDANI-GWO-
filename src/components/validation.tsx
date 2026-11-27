@@ -18,6 +18,8 @@ import { DataDetails, DataTable, Notice, Panel } from "./ui";
 import { NetworkTopologyPanel } from "./network-topology";
 export function ValidationView({ data }: { data: DashboardData }) {
   const [metric, setMetric] = useState<Metric>("FND");
+  const metricLabel = metric === "PDR_pct" ? "PDR" : metric;
+  const axisLabel = `${metricLabel} (${metric === "PDR_pct" ? "%" : "ronde"})`;
   const means = useMemo(() => validationConfig(data), [data]);
   const seeds = useMemo(
     () => [...data.validation_rows].sort((a, b) => a.seed - b.seed),
@@ -59,7 +61,7 @@ export function ValidationView({ data }: { data: DashboardData }) {
         })),
       },
       options: {
-        ...chartOptions(metric === "PDR_pct" ? "PDR (%)" : "Ronde"),
+        ...chartOptions(axisLabel),
         interaction: { mode: "nearest", intersect: true },
         plugins: {
           ...chartOptions("").plugins,
@@ -77,7 +79,7 @@ export function ValidationView({ data }: { data: DashboardData }) {
           },
         },
         scales: {
-          ...chartOptions("").scales,
+          ...chartOptions(axisLabel).scales,
           x: {
             type: "linear",
             min: -0.5,
@@ -90,13 +92,13 @@ export function ValidationView({ data }: { data: DashboardData }) {
             title: { display: true, text: "Seed uji" },
           },
           y: {
-            ...chartOptions("").scales?.y,
+            ...chartOptions(axisLabel).scales?.y,
             beginAtZero: metric !== "PDR_pct",
           },
         },
       },
     }),
-    [data.validation_horizon, seeds, metric],
+    [data.validation_horizon, seeds, metric, axisLabel],
   );
   const conclusionRows = data.validation.filter(
     (row) => row.metric !== "lifetime_index",
@@ -315,9 +317,18 @@ export function ValidationView({ data }: { data: DashboardData }) {
         caption="Setiap pasangan titik mewakili satu seed uji, terpisah dari seed kalibrasi. Milestone tersensor ditampilkan pada batas horizon; nilainya diberi tanda > pada tabel."
       >
         <div className="seed-analysis-grid">
-          <Chart config={config} label="Sebaran metrik setiap seed uji" />
+          <section
+            className="seed-chart-panel"
+            aria-labelledby="seed-chart-title"
+          >
+            <h3 id="seed-chart-title">Grafik {metricLabel} per seed uji</h3>
+            <Chart
+              config={config}
+              label={`Sebaran ${axisLabel} setiap seed uji · FUZZY dan GWO`}
+            />
+          </section>
           <section className="seed-table-panel">
-            <h3>Nilai seed uji · {metric === "PDR_pct" ? "PDR" : metric}</h3>
+            <h3>Nilai seed uji · {metricLabel}</h3>
             <DataTable
               rows={seeds}
               columns={[

@@ -718,6 +718,10 @@ canvas {
   padding: 14px;
   background: #f8faf8;
 }
+.seed-chart-panel {
+  min-width: 0;
+}
+.seed-chart-panel h3,
 .seed-table-panel h3 {
   color: #193832;
   font-size: 14px;
