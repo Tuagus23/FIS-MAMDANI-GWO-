@@ -189,6 +189,28 @@
   line-height: 1.55;
 }
 
+.excerpt .excerptHeading {
+  margin-bottom: 10px;
+  color: #223e34;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.excerptTitle {
+  display: block;
+  margin-top: 10px;
+  font-style: normal;
+  line-height: 1.6;
+}
+
+.answer > .evidenceContext {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
 .excerpt figcaption {
   margin-top: 12px;
   color: #496356;

@@ -27,6 +27,14 @@ const papers = {
     quote: "assume the fuzzy control rules are predefined",
     meaning: "Metode penyetelan MF ini memakai aturan fuzzy yang sudah ditetapkan.",
   },
+  tremante: {
+    author: "Tremante, Yen, dan Brea (2019)",
+    title: "Tuning of the Membership Functions of a Fuzzy Control System Using Pattern Search Optimization Method",
+    doi: "10.3233/JIFS-190003",
+    page: "Abstrak, PDF hlm. 1 (naskah penulis)",
+    quote: "If this adjust is done through a ‘trial and error’ procedure, then it will be very time-consuming and difficult to reach a good performance.",
+    meaning: "Jika penyesuaian ini dilakukan melalui prosedur coba-coba, prosesnya akan sangat memakan waktu dan sulit mencapai performa yang baik.",
+  },
   verma: {
     author: "Verma dan Baliyan (2021)",
     title: "Grey Wolf Optimization with Fuzzy Logic for Energy-Efficient Communication in Wireless Sensor Network-Based Internet of Things Scenario",
@@ -46,6 +54,7 @@ const papers = {
   herrera: {
     author: "Herrera, Lozano, dan Verdegay (1995)",
     title: "Tuning Fuzzy Logic Controllers by Genetic Algorithms",
+    publication: "International Journal of Approximate Reasoning, 12(3–4), 299–315.",
     doi: "10.1016/0888-613X(94)00033-Y",
     page: "Abstrak, PDF hlm. 1 (hlm. 299 pada jurnal)",
     quote: "The performance of a fuzzy logic controller depends on its control rules and membership functions.",
@@ -118,13 +127,26 @@ function Source({ paper }: { paper: Paper }) {
   return <a href={`#rujukan-${paper}`}>{papers[paper].author}</a>;
 }
 
-function Excerpt({ paper }: { paper: Paper }) {
-  const { quote, meaning, page, doi } = papers[paper];
+function Excerpt({
+  paper,
+  heading,
+  passage,
+}: {
+  paper: Paper;
+  heading?: string;
+  passage?: { quote: string; meaning: string; page: string };
+}) {
+  const source = papers[paper];
+  const { doi, title } = source;
+  const { quote, meaning, page } = passage ?? papers[paper];
   return (
     <figure className={styles.excerpt}>
+      {heading && <h4 className={styles.excerptHeading}>{heading}</h4>}
       <blockquote lang="en" cite={`https://doi.org/${doi}`}>“{quote}”</blockquote>
       <figcaption>
-        <p className={styles.meaning}><strong>Makna kutipan</strong> {meaning}</p>
+        <p className={styles.meaning}><strong>{heading ? "Terjemahan" : "Makna kutipan"}</strong> {meaning}</p>
+        {heading && <cite className={styles.excerptTitle} lang="en">{title}</cite>}
+        {heading && "publication" in source && <span>{source.publication}</span>}
         <div className={styles.excerptSource}>
           <a href={`https://doi.org/${doi}`}>{papers[paper].author}</a>
           <span>{page}</span>
@@ -208,7 +230,48 @@ export function ProjectBasis() {
               topologi dan bobot yang ditetapkan. Perbandingan pada kondisi
               yang setara menunjukkan apakah pencarian memberi manfaat.
             </p>
-            <Evidence sources={["hamzah"]} />
+            <p>
+              Zhang dkk. menjelaskan bahwa keberhasilan pengendali fuzzy banyak
+              bergantung pada parameter yang ditentukan secara subjektif.
+              Tremante dkk. menyoroti waktu dan kesulitan penyetelan melalui
+              coba-coba. Herrera dkk. menegaskan bahwa MF dan aturan sama-sama
+              memengaruhi performa. Dua sistem dengan input yang sama dapat
+              menghasilkan keluaran dan performa berbeda apabila konfigurasi MF
+              atau aturannya berbeda. Penentuan keduanya merupakan bagian penting
+              dari desain sistem fuzzy.
+            </p>
+            <div className={styles.evidence}>
+              <h3>Kutipan asli dari paper</h3>
+              <Excerpt
+                paper="zhang"
+                heading="Parameter MF ditentukan secara subjektif"
+                passage={{
+                  quote: "The successful application of fuzzy control largely depends on some subjectively decided parameters, such as fuzzy membership functions.",
+                  meaning: "Keberhasilan penerapan kontrol fuzzy sebagian besar bergantung pada beberapa parameter yang ditentukan secara subjektif, seperti fungsi keanggotaan fuzzy.",
+                  page: "Abstrak, PDF hlm. 1 (hlm. 465 pada prosiding)",
+                }}
+              />
+              <Excerpt
+                paper="tremante"
+                heading="Penyetelan coba-coba membutuhkan waktu"
+              />
+              <Excerpt
+                paper="herrera"
+                heading="Performa bergantung pada MF dan aturan"
+                passage={{
+                  quote: papers.herrera.quote,
+                  meaning: "Performa fuzzy logic controller bergantung pada aturan kontrol dan fungsi keanggotaan yang digunakan.",
+                  page: papers.herrera.page,
+                }}
+              />
+              <Excerpt paper="hamzah" />
+            </div>
+            <p className={styles.evidenceContext}>
+              Ketiga paper tentang pengendali fuzzy memberi landasan umum untuk
+              menyetel parameter. Hamzah dkk. memberi contoh penetapan MF secara
+              coba-coba pada WSN. Manfaat GWO dalam proyek ini tetap dinilai
+              melalui perbandingan hasil simulasi pada kondisi yang setara.
+            </p>
           </Answer>
 
           <Answer topic={topics[1]}>
@@ -374,6 +437,7 @@ export function ProjectBasis() {
                 <li key={id} id={`rujukan-${id}`}>
                   <strong>{paper.author}</strong>
                   <cite lang="en">{paper.title}</cite>
+                  {"publication" in paper && <span>{paper.publication}</span>}
                   <a href={`https://doi.org/${paper.doi}`} aria-label={`Buka paper ${paper.author}`}>DOI {paper.doi}</a>
                 </li>
               ))}
