@@ -162,6 +162,35 @@ export function ValidationView({ data }: { data: DashboardData }) {
     return <Notice>Data validasi tidak tersedia pada dataset ini.</Notice>;
   return (
     <>
+      <section className="panel" aria-labelledby="validation-guide-title">
+        <h2 className="panel-title" id="validation-guide-title">
+          Perbedaan Ringkasan dan Validasi model
+        </h2>
+        <dl className="validation-guide-pages">
+          <div>
+            <dt>
+              <Link href="/">Ringkasan</Link>
+            </dt>
+            <dd className="panel-caption">
+              Membandingkan FUZZY, LEACH, dan GWO pada satu simulasi dengan satu
+              susunan node (satu seed).
+            </dd>
+          </div>
+          <div>
+            <dt>Validasi model</dt>
+            <dd className="panel-caption">
+              Membandingkan FUZZY dan GWO pada {integer(seeds.length)} seed uji
+              lain dengan susunan node berbeda. Hasilnya ditampilkan sebagai
+              rata-rata dan sebaran per seed.
+            </dd>
+          </div>
+        </dl>
+        <p className="panel-caption validation-guide-note">
+          Satu dataset memuat hasil kedua pengujian. Nilai LND (ronde saat node
+          terakhir mati) bisa berbeda karena dihitung dari percobaan yang
+          berbeda.
+        </p>
+      </section>
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Panel
           title={`Rata-rata ${integer(seeds.length)} seed uji`}
@@ -184,14 +213,11 @@ export function ValidationView({ data }: { data: DashboardData }) {
             * Batas bawah rata-rata. Milestone yang belum tercapai dihitung pada
             batas pengamatan {integer(data.validation_horizon)} ronde.
           </p>
-          <DataDetails title="Seed uji dan cara membaca hasil">
+          <DataDetails title="Daftar seed uji">
             <p className="panel-caption">
               Seed uji {seeds.map((row) => row.seed).join(", ")}. Batas
               pengamatan {integer(data.validation_horizon)} ronde.
             </p>
-            <Link className="button button-quiet" href="/">
-              Lihat hasil eksperimen tunggal di Ringkasan
-            </Link>
           </DataDetails>
         </Panel>
         <Panel
