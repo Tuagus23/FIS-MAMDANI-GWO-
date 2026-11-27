@@ -8,6 +8,7 @@ from .config import OptimizerConfig, SimulationConfig
 from .fuzzy import FuzzyRuleBase, MembershipSet
 from .optimization import CalibrationReport, MFOptimizer
 from .visualization import ResultPlotter
+from .visualization.topology import save_topology_images
 from .wsn import NetworkSimulator, SimulationSummary, create_topology
 
 
@@ -61,6 +62,11 @@ class TopologyValidator:
 
     def run(self, topology_count: int) -> list[dict]:
         rows = []
+        save_topology_images(
+            self.config,
+            [self.config.seed + 101 * (index + 1) for index in range(topology_count)],
+            self.result_writer.output_dir,
+        )
         for index in range(topology_count):
             seed = self.config.seed + 101 * (index + 1)
             topology = create_topology(self.config, seed)
@@ -163,6 +169,10 @@ class ExperimentRunner:
 
     def run(self) -> list[SimulationSummary]:
         membership, report = self._prepare_membership()
+        seeds = [self.config.seed]
+        if self.optimizer_config is not None:
+            seeds.extend(self.optimizer_config.fitness_seeds)
+        save_topology_images(self.config, seeds, self.output_dir)
         if report is not None:
             report.save(self.output_dir)
             self._print_calibration(report)

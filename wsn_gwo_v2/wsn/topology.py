@@ -27,3 +27,16 @@ def create_topology(config: SimulationConfig, seed: int) -> list[Node]:
     """Convenience wrapper retained for a simple public API."""
     return TopologyFactory.random(config, seed)
 
+
+def topology_data(config: SimulationConfig, seed: int) -> dict:
+    return {
+        "seed": seed,
+        "width_m": config.width_m,
+        "height_m": config.height_m,
+        "base_station": {"x_m": config.sink_x_m, "y_m": config.sink_y_m},
+        "nodes": [
+            {"node_id": node.node_id, "x_m": node.x_m, "y_m": node.y_m}
+            for node in create_topology(config, seed)
+        ],
+    }
+

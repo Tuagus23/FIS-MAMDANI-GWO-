@@ -5,6 +5,7 @@ import { bestRows, integer, milestone, percent } from "@/lib/data";
 import { historyConfig, lifetimeConfig } from "@/lib/charts";
 import { Chart } from "./chart";
 import { DataDetails, DataTable, Panel, ProtocolName, Notice } from "./ui";
+import { NetworkTopologyPanel } from "./network-topology";
 export function SummaryTable({
   rows,
   horizon,
@@ -132,6 +133,7 @@ export function Results({ data }: { data: DashboardData }) {
           <HistoryChart rows={data.history} />
         </Panel>
       </div>
+      <NetworkTopologyPanel topologies={data.topologies} />
       <Panel title="Ringkasan metrik">
         <SummaryTable rows={data.summary} horizon={data.horizon} />
         <p className="table-footnote">

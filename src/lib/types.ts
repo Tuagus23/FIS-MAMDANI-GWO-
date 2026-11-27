@@ -79,6 +79,20 @@ export interface DashboardData {
   membership_baseline: Membership;
   membership_ranges: Record<Variable, MembershipRange>;
   fis_process: FisProcess;
+  topologies?: TopologyCollection;
+}
+export interface NetworkTopology {
+  seed: number;
+  width_m: number;
+  height_m: number;
+  base_station: { x_m: number; y_m: number };
+  nodes: { node_id: number; x_m: number; y_m: number }[];
+}
+export interface TopologyCollection {
+  experiment_seed: number;
+  fitness_seeds: number[];
+  validation_seeds: number[];
+  layouts: NetworkTopology[];
 }
 export interface DatasetsResponse {
   default: string;

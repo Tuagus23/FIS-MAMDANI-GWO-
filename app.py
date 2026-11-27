@@ -23,6 +23,7 @@ from auth import (
 from wsn_gwo_v2.config import NEIGHBOR_INPUT_CAP, SimulationConfig
 from wsn_gwo_v2.fuzzy import FuzzyRuleBase, MembershipSet
 from wsn_gwo_v2.wsn import NetworkSimulator, create_topology
+from wsn_gwo_v2.wsn.topology import topology_data
 
 
 ROOT = Path(__file__).resolve().parent
@@ -39,11 +40,13 @@ DATASETS = {
         "label": "Kalibrasi 10 seed",
         "description": "Model GWO dilatih pada sepuluh seed dan divalidasi pada topologi terpisah.",
         "path": ROOT / "hasil_optimasi_10seed",
+        "fitness_seeds": list(range(1, 11)),
     },
     "optimasi_seed42_weight030": {
         "label": "Eksperimen seed 42",
         "description": "Model GWO dikalibrasi dengan seed 42. Menu validasi menampilkan 10 seed uji yang terpisah.",
         "path": ROOT / "optimasi_seed42_weight030",
+        "fitness_seeds": [42],
     },
 }
 
@@ -168,6 +171,10 @@ def dashboard_data(dataset_id: str) -> dict:
     membership = read_json(folder / "membership_gwo.json")
     membership = membership or {}
     baseline = MembershipSet.default().to_dict()
+    config = SimulationConfig()
+    fitness_seeds = dataset.get("fitness_seeds", [])
+    validation_seeds = sorted({row["seed"] for row in validation_rows})
+    topology_seeds = list(dict.fromkeys([config.seed, *fitness_seeds, *validation_seeds]))
     return {
         "dataset": {
             "id": dataset_id,
@@ -178,6 +185,12 @@ def dashboard_data(dataset_id: str) -> dict:
         "validation": validation,
         "validation_rows": validation_rows,
         "validation_horizon": horizon,
+        "topologies": {
+            "experiment_seed": config.seed,
+            "fitness_seeds": fitness_seeds,
+            "validation_seeds": validation_seeds,
+            "layouts": [topology_data(config, seed) for seed in topology_seeds],
+        },
         "horizon": int(dataset.get("horizon", SimulationConfig().rounds)),
         "history": [
             {

@@ -15,6 +15,7 @@ import { chartOptions, validationConfig } from "@/lib/charts";
 import { downloadCsv } from "@/lib/download";
 import { Chart } from "./chart";
 import { DataDetails, DataTable, Notice, Panel } from "./ui";
+import { NetworkTopologyPanel } from "./network-topology";
 export function ValidationView({ data }: { data: DashboardData }) {
   const [metric, setMetric] = useState<Metric>("FND");
   const means = useMemo(() => validationConfig(data), [data]);
@@ -372,6 +373,7 @@ export function ValidationView({ data }: { data: DashboardData }) {
           {censored("FUZZY", "LND")}, GWO {censored("GWO", "LND")} seed.
         </p>
       </Panel>
+      <NetworkTopologyPanel topologies={data.topologies} validation />
     </>
   );
 }
