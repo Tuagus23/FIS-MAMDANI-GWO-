@@ -155,6 +155,21 @@ class ApiTests(unittest.TestCase):
                         run_simulation=lambda payload: {"config": payload, "summary": []}):
             self.assertEqual(self.request("/api/simulate", {"nodes": 10})[0], 200)
 
+    def test_disabled_dataset_is_hidden_and_cannot_be_loaded_or_simulated(self):
+        snapshot = {"dataset": {"id": "results"}, "summary": [], "history": []}
+        with patch.dict(self.handler.do_GET.__globals__,
+                        verify_authorization_header=lambda _: MEMBER,
+                        dashboard_data=lambda key: snapshot if key == "results" else self.fail("Disabled dataset read")):
+            for route in ("/api/datasets", "/api/bootstrap"):
+                status, body = self.request(route)
+                self.assertEqual(status, 200)
+                self.assertEqual(
+                    [dataset["id"] for dataset in body["datasets"]],
+                    ["results", "optimasi_seed42_weight030"],
+                )
+            self.assertEqual(self.request("/api/dashboard?dataset=hasil_optimasi_10seed")[0], 404)
+            self.assertEqual(self.request("/api/simulate", {"dataset_id": "hasil_optimasi_10seed"})[0], 400)
+
     def test_public_mode_allows_only_experiment_data_and_simulation_without_login(self):
         snapshot = {"dataset": {"id": "results"}, "summary": [], "history": []}
         with patch.dict(self.handler.do_GET.__globals__, public_dashboard_enabled=lambda: True,

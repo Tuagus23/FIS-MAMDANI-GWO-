@@ -41,6 +41,7 @@ DATASETS = {
         "description": "Model GWO dilatih pada sepuluh seed dan divalidasi pada topologi terpisah.",
         "path": ROOT / "hasil_optimasi_10seed",
         "fitness_seeds": list(range(1, 11)),
+        "web_enabled": False,
     },
     "optimasi_seed42_weight030": {
         "label": "Eksperimen seed 42",
@@ -48,6 +49,11 @@ DATASETS = {
         "path": ROOT / "optimasi_seed42_weight030",
         "fitness_seeds": [42],
     },
+}
+
+WEB_DATASETS = {
+    key: value for key, value in DATASETS.items()
+    if value.get("web_enabled", True)
 }
 
 
@@ -223,7 +229,7 @@ def dashboard_data(dataset_id: str) -> dict:
 
 def run_simulation(payload: dict) -> dict:
     dataset_id = payload.get("dataset_id", "results")
-    if not isinstance(dataset_id, str) or dataset_id not in DATASETS:
+    if not isinstance(dataset_id, str) or dataset_id not in WEB_DATASETS:
         raise ValueError("Pilih dataset yang valid sebelum menjalankan simulasi.")
 
     try:
@@ -305,7 +311,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     "default": "results",
                     "datasets": [
                         {"id": key, "label": value["label"], "description": value["description"]}
-                        for key, value in DATASETS.items()
+                        for key, value in WEB_DATASETS.items()
                     ],
                 }
             )
@@ -316,7 +322,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 return
             params = parse_qs(request.query)
             dataset_id = params.get("dataset", ["results"])[0]
-            if dataset_id not in DATASETS:
+            if dataset_id not in WEB_DATASETS:
                 self.send_json({"error": "Dataset tidak dikenal."}, status=404)
                 return
             try:

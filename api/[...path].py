@@ -18,7 +18,7 @@ from auth import (
     sign_in_with_identifier,
     verify_authorization_header,
 )
-from app import DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
+from app import WEB_DATASETS as DATASETS, SIMULATION_LOCK, dashboard_data, run_simulation
 from access import DASHBOARD_PAGES, AccessConflict, end_session, kick_member, list_users, update_user
 
 
